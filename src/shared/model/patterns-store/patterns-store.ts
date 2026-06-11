@@ -259,7 +259,7 @@ export function createPatternsStore() {
           set((s) => ({ patternRuns: [...s.patternRuns, run] }));
         },
       }),
-      { name: "memora-patterns-store" },
+      { name: "pls-patterns-store" },
     ),
   );
 }

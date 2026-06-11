@@ -273,7 +273,7 @@ export function createAppStore() {
         resetStore: () => set({ lists: [], words: [], selectedListId: null }),
       }),
       {
-        name: "memora-store",
+        name: "pls-store",
         version: STORE_VERSION,
         migrate: (persistedState, version) => {
           if (version >= STORE_VERSION) {

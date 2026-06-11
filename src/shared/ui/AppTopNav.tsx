@@ -23,7 +23,7 @@ export function AppTopNav() {
             fontWeight: 600,
           }}
         >
-          Memora
+          PLS
         </Typography>
         <Box sx={{ flex: 1, display: "flex", gap: 0.5 }}>
           <Button component={Link} href="/lists" color="inherit">

@@ -191,7 +191,7 @@ export function createCoursesStore() {
           }));
         },
       }),
-      { name: "memora-courses-store" },
+      { name: "pls-courses-store" },
     ),
   );
 }

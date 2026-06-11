@@ -10,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Memora",
-  description: "Vocabulary learning through images and sound associations",
+  title: "Personal Learning System",
+  description: "Personal learning system for vocabulary and knowledge",
 };
 
 export default function RootLayout({

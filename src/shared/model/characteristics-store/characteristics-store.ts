@@ -97,7 +97,7 @@ export function createCharacteristicsStore() {
         getCharacteristicById: (id) =>
           get().characteristics.find((c) => c.id === id),
       }),
-      { name: "memora-characteristics-store" },
+      { name: "pls-characteristics-store" },
     ),
   );
 }
