@@ -4,27 +4,31 @@ import { Button, Container, Stack, TextField, Typography } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useCharacteristicsStore } from "@/shared/model/characteristics-store";
+import { createCharacteristicAction } from "@/entities/characteristic/api/characteristic-actions";
 
 export default function NewCharacteristicPage() {
   const router = useRouter();
-  const createCharacteristic = useCharacteristicsStore(
-    (s) => s.createCharacteristic,
-  );
   const [key, setKey] = useState("");
   const [description, setDescription] = useState("");
   const [example, setExample] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const canSave = key.trim().length > 0 && description.trim().length > 0;
 
-  function handleSave() {
-    if (!canSave) return;
-    createCharacteristic({
-      key: key.trim(),
-      description: description.trim(),
-      example: example.trim() || null,
-    });
-    router.push("/characteristics");
+  async function handleSave() {
+    if (!canSave || loading) return;
+    setLoading(true);
+    try {
+      await createCharacteristicAction({
+        key: key.trim(),
+        description: description.trim(),
+        example: example.trim() || null,
+      });
+      router.refresh();
+      router.push("/characteristics");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -57,8 +61,8 @@ export default function NewCharacteristicPage() {
           onChange={(e) => setExample(e.target.value)}
         />
         <Stack direction="row" spacing={2}>
-          <Button variant="contained" onClick={handleSave} disabled={!canSave}>
-            Save
+          <Button variant="contained" onClick={handleSave} disabled={!canSave || loading}>
+            {loading ? "Saving…" : "Save"}
           </Button>
           <Button component={Link} href="/characteristics">
             Cancel

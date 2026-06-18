@@ -1,32 +1,31 @@
 "use client";
 
 import { useMemo } from "react";
+import type { PatternSentence } from "@/entities/pattern";
 import {
-  getFirstPassQueue,
-  usePatternsStore,
-} from "@/shared/model/patterns-store";
+  markSentenceCorrectAction,
+  markSentenceMistakeAction,
+} from "@/entities/pattern/api/pattern-actions";
+import { getFirstPassQueue } from "@/shared/model/patterns-store";
 import { SentencePracticeFlow } from "@/shared/ui/SentencePracticeFlow";
 
 type FirstPassModeProps = {
   patternId: string;
+  initialSentences: PatternSentence[];
 };
 
-export function FirstPassMode({ patternId }: FirstPassModeProps) {
-  const allSentences = usePatternsStore((s) => s.patternSentences);
-  const markSentenceCorrect = usePatternsStore((s) => s.markSentenceCorrect);
-  const markSentenceMistake = usePatternsStore((s) => s.markSentenceMistake);
-
+export function FirstPassMode({ patternId, initialSentences }: FirstPassModeProps) {
   const sentences = useMemo(
-    () => getFirstPassQueue(allSentences, patternId),
-    [allSentences, patternId],
+    () => getFirstPassQueue(initialSentences, patternId),
+    [initialSentences, patternId],
   );
 
   return (
     <SentencePracticeFlow
       sentences={sentences}
       backHref={`/patterns/${patternId}`}
-      onCorrect={(id) => markSentenceCorrect(id, "first-pass")}
-      onMistake={(id) => markSentenceMistake(id, "first-pass")}
+      onCorrect={(id) => markSentenceCorrectAction(id, "first-pass")}
+      onMistake={(id) => markSentenceMistakeAction(id)}
       emptyLabel="No new sentences in this pattern."
       completeLabel="First pass complete. Check Review Marked for any hesitations."
     />

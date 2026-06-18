@@ -6,8 +6,6 @@ import { nowISO } from "@/shared/lib/date";
 
 import { makeList, makeWord, nextEncodingRound, patchWord } from "./utils";
 
-const STORE_VERSION = 2;
-
 // ---------------------------------------------------------------------------
 // State shape
 // ---------------------------------------------------------------------------
@@ -17,48 +15,6 @@ type AppStoreState = {
   words: Word[];
   selectedListId: string | null;
 };
-
-function migratePersistedState(persisted: unknown): AppStoreState {
-  if (!persisted || typeof persisted !== "object") {
-    return { lists: [], words: [], selectedListId: null };
-  }
-  const p = persisted as Record<string, unknown>;
-  const listsIn = p.lists;
-  const wordsIn = p.words;
-  if (!Array.isArray(listsIn) || !Array.isArray(wordsIn)) {
-    return { lists: [], words: [], selectedListId: null };
-  }
-
-  const lists: List[] = listsIn.map((item) => {
-    const l = item as Record<string, unknown>;
-    return {
-      id: String(l.id),
-      name: String(l.name),
-      description: l.description == null ? null : String(l.description),
-      sourceLanguage: (l.sourceLanguage === "en" ? "en" : "ru") as LanguageCode,
-      targetLanguage: (l.targetLanguage === "ru" ? "ru" : "en") as LanguageCode,
-      createdAt: String(l.createdAt),
-      updatedAt: String(l.updatedAt),
-    };
-  });
-
-  const words: Word[] = wordsIn.map((item) => {
-    const w = { ...(item as Record<string, unknown>) };
-    const hasNew =
-      typeof w.sourceText === "string" && typeof w.targetText === "string";
-    const sourceText = hasNew ? String(w.sourceText) : String(w.ru ?? "");
-    const targetText = hasNew ? String(w.targetText) : String(w.en ?? "");
-    delete w.ru;
-    delete w.en;
-    return { ...w, sourceText, targetText } as Word;
-  });
-
-  return {
-    lists,
-    words,
-    selectedListId: (p.selectedListId as string | null) ?? null,
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Actions
@@ -77,6 +33,7 @@ type AppStoreActions = {
     listId: string,
     patch: Partial<Omit<List, "id" | "createdAt">>,
   ) => void;
+  deleteList: (listId: string) => void;
 
   addWordToList: (params: {
     listId: string;
@@ -91,6 +48,7 @@ type AppStoreActions = {
     wordId: string,
     patch: Partial<Omit<Word, "id" | "listId" | "createdAt">>,
   ) => void;
+  deleteWord: (wordId: string) => void;
 
   selectWord: (wordId: string) => void;
   rejectWord: (
@@ -149,6 +107,15 @@ export function createAppStore() {
           }));
         },
 
+        deleteList: (listId) => {
+          set((s) => ({
+            lists: s.lists.filter((l) => l.id !== listId),
+            words: s.words.filter((w) => w.listId !== listId),
+            selectedListId:
+              s.selectedListId === listId ? null : s.selectedListId,
+          }));
+        },
+
         // --- Words ---
 
         addWordToList: ({ listId, sourceText, targetText }) => {
@@ -166,6 +133,10 @@ export function createAppStore() {
 
         updateWord: (wordId, patch) => {
           set((s) => ({ words: patchWord(s.words, wordId, patch) }));
+        },
+
+        deleteWord: (wordId) => {
+          set((s) => ({ words: s.words.filter((w) => w.id !== wordId) }));
         },
 
         // --- Selection ---
@@ -272,16 +243,7 @@ export function createAppStore() {
 
         resetStore: () => set({ lists: [], words: [], selectedListId: null }),
       }),
-      {
-        name: "pls-store",
-        version: STORE_VERSION,
-        migrate: (persistedState, version) => {
-          if (version >= STORE_VERSION) {
-            return persistedState as AppStoreState;
-          }
-          return migratePersistedState(persistedState);
-        },
-      },
+      { name: "pls-store" },
     ),
   );
 }

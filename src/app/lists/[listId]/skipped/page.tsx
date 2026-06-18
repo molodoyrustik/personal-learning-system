@@ -1,3 +1,4 @@
+import { getWordsByListId } from "@/entities/word/api/word-api";
 import { SkippedMode } from "@/features/word-skipped";
 
 type SkippedPageProps = {
@@ -6,6 +7,6 @@ type SkippedPageProps = {
 
 export default async function SkippedPage({ params }: SkippedPageProps) {
   const { listId } = await params;
-
-  return <SkippedMode listId={listId} />;
+  const words = await getWordsByListId(listId);
+  return <SkippedMode listId={listId} initialWords={words} />;
 }

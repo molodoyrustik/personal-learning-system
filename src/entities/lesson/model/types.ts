@@ -5,7 +5,7 @@ export type Lesson = {
   description: string | null;
   order: number;
   wordListIds: string[];
-  patternListIds: string[];
+  patternIds: string[];
   createdAt: string;
   updatedAt: string;
 };

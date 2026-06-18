@@ -1,9 +1,15 @@
 "use client";
 
 import { Button, Stack, Typography } from "@mui/material";
-import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
-import { isInDictionaryQueue, useAppStore } from "@/shared/model/app-store";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import type { Word } from "@/entities/word/model/types";
+import {
+  saveEncodingAction,
+  setMeaningVisualizationAction,
+  skipWordAction,
+} from "@/entities/word/api/word-actions";
+import { isInDictionaryQueue } from "@/shared/model/app-store";
 import {
   StepFixation,
   StepImageCheck,
@@ -13,11 +19,12 @@ import {
 
 type DictionaryModeProps = {
   listId: string;
+  initialWords: Word[];
 };
 
 type Step = 1 | 2 | 3 | 4;
 
-function CompletionState({ listId, empty }: { listId: string; empty?: boolean }) {
+function CompletionState({ empty, onBack }: { empty?: boolean; onBack: () => void }) {
   return (
     <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
       <Stack spacing={1} alignItems="center">
@@ -30,37 +37,22 @@ function CompletionState({ listId, empty }: { listId: string; empty?: boolean })
             : "All difficult words have been processed."}
         </Typography>
       </Stack>
-      <Link href={`/lists/${listId}`} style={{ textDecoration: "none" }}>
-        <Button variant="outlined">Back to list</Button>
-      </Link>
+      <Button variant="outlined" onClick={onBack}>Back to list</Button>
     </Stack>
   );
 }
 
-export function DictionaryMode({ listId }: DictionaryModeProps) {
-  const allWords = useAppStore((state) => state.words);
-  const setMeaningVisualization = useAppStore((state) => state.setMeaningVisualization);
-  const saveEncoding = useAppStore((state) => state.saveEncoding);
-  const skipWord = useAppStore((state) => state.skipWord);
-
-  // Capture session queue once on mount — dictionary words (skipped, round === 3)
-  const allWordsRef = useRef(allWords);
-  const [queue, setQueue] = useState<string[]>(() =>
-    allWordsRef.current
-      .filter((w) => w.listId === listId && isInDictionaryQueue(w))
-      .map((w) => w.id),
+export function DictionaryMode({ listId, initialWords }: DictionaryModeProps) {
+  const [queue, setQueue] = useState<Word[]>(() =>
+    initialWords.filter((w) => isInDictionaryQueue(w)),
   );
-
   const [step, setStep] = useState<Step>(1);
   const [soundAssociation, setSoundAssociation] = useState("");
   const [sceneDescription, setSceneDescription] = useState("");
   const [doneCount, setDoneCount] = useState(0);
 
-  const wordsMap = useMemo(() => new Map(allWords.map((w) => [w.id, w])), [allWords]);
-
+  const current = queue[0] ?? null;
   const total = queue.length;
-  const currentId = queue[0] ?? null;
-  const current = currentId ? (wordsMap.get(currentId) ?? null) : null;
 
   function resetInputs() {
     setSoundAssociation("");
@@ -74,17 +66,15 @@ export function DictionaryMode({ listId }: DictionaryModeProps) {
     resetInputs();
   }
 
-  // Step 1 — no setMeaningVisualization(false) on skip (word stays in dictionary)
-  function handleHasImage() {
-    if (!currentId) return;
-    setMeaningVisualization(currentId, true);
+  async function handleHasImage() {
+    if (!current) return;
+    await setMeaningVisualizationAction(current.id, true);
     setStep(2);
   }
 
-  function handleImageSkip() {
-    if (!currentId) return;
-    // skipWord keeps round at 3 (cap), word stays in dictionary queue
-    skipWord(currentId);
+  async function handleImageSkip() {
+    if (!current) return;
+    await skipWordAction(current.id);
     moveToNext();
   }
 
@@ -93,9 +83,9 @@ export function DictionaryMode({ listId }: DictionaryModeProps) {
     setStep(3);
   }
 
-  function handleSoundSkip() {
-    if (!currentId) return;
-    skipWord(currentId);
+  async function handleSoundSkip() {
+    if (!current) return;
+    await skipWordAction(current.id);
     moveToNext();
   }
 
@@ -104,31 +94,33 @@ export function DictionaryMode({ listId }: DictionaryModeProps) {
     setStep(4);
   }
 
-  function handleSceneSkip() {
-    if (!currentId) return;
-    skipWord(currentId);
+  async function handleSceneSkip() {
+    if (!current) return;
+    await skipWordAction(current.id);
     moveToNext();
   }
 
-  function handleDone() {
-    if (!currentId) return;
-    saveEncoding(currentId, {
+  async function handleDone() {
+    if (!current) return;
+    await saveEncodingAction(current.id, {
       soundAssociation: soundAssociation.trim(),
       sceneDescription: sceneDescription.trim(),
     });
     moveToNext();
   }
 
-  if (total === 0) return <CompletionState listId={listId} empty />;
-  if (!current) return <CompletionState listId={listId} />;
+  const router = useRouter();
+  function goBack() { router.refresh(); router.push(`/lists/${listId}`); }
+
+  if (total === 0) return <CompletionState empty onBack={goBack} />;
+  if (!current) return <CompletionState onBack={goBack} />;
 
   return (
     <Stack spacing={3}>
-      {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Link href={`/lists/${listId}`} style={{ textDecoration: "none" }}>
-          <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }}>← Back</Button>
-        </Link>
+        <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} onClick={goBack}>
+          ← Back
+        </Button>
         <Stack alignItems="flex-end">
           <Typography variant="caption" color="text.secondary">
             {doneCount + 1} / {total}
@@ -139,12 +131,10 @@ export function DictionaryMode({ listId }: DictionaryModeProps) {
         </Stack>
       </Stack>
 
-      {/* Helper hint — no timer in this mode */}
       <Typography variant="body2" color="text.secondary" textAlign="center">
         Используй словарь для поиска подходящей ассоциации
       </Typography>
 
-      {/* Step content */}
       {step === 1 && (
         <StepImageCheck
           word={current}

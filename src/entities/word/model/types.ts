@@ -1,5 +1,3 @@
-export type WordType = "image_noun";
-
 export type WordStatus =
   | "new"
   | "selected"
@@ -28,7 +26,6 @@ export type Word = {
   sourceText: string;
   targetText: string;
 
-  type: WordType;
   status: WordStatus;
   selectionDecision: SelectionDecision;
   canVisualizeMeaning: boolean | null;

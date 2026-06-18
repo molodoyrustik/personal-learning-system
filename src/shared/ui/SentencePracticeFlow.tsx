@@ -9,7 +9,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { PatternSentence } from "@/entities/pattern";
 
@@ -63,6 +63,8 @@ export function SentencePracticeFlow({
   // from the prop on every render, current would become null mid-session and
   // the UI would disappear. The snapshot keeps sentence data stable for the
   // entire session regardless of store updates.
+  const router = useRouter();
+
   const [queue, setQueue] = useState<string[]>(() => sentences.map((s) => s.id));
   const [sentencesMap] = useState(
     () => new Map(sentences.map((s) => [s.id, s])),
@@ -158,6 +160,12 @@ export function SentencePracticeFlow({
   // Render: empty state (queue started empty)
   // ---------------------------------------------------------------------------
 
+  function handleBack() {
+    cancelTimer();
+    router.refresh();
+    router.push(backHref);
+  }
+
   if (queue.length === 0 && doneCount === 0) {
     return (
       <Stack
@@ -172,9 +180,7 @@ export function SentencePracticeFlow({
             {emptyLabel}
           </Typography>
         </Stack>
-        <Link href={backHref} style={{ textDecoration: "none" }}>
-          <Button variant="outlined">← Back</Button>
-        </Link>
+        <Button variant="outlined" onClick={handleBack}>← Back</Button>
       </Stack>
     );
   }
@@ -197,9 +203,7 @@ export function SentencePracticeFlow({
             {completeLabel}
           </Typography>
         </Stack>
-        <Link href={backHref} style={{ textDecoration: "none" }}>
-          <Button variant="outlined">← Back</Button>
-        </Link>
+        <Button variant="outlined" onClick={handleBack}>← Back</Button>
       </Stack>
     );
   }
@@ -217,16 +221,14 @@ export function SentencePracticeFlow({
     <Stack spacing={3}>
       {/* Header row */}
       <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Link href={backHref} style={{ textDecoration: "none" }}>
-          <Button
-            variant="text"
-            size="small"
-            sx={{ px: 0, minHeight: "auto" }}
-            onClick={cancelTimer}
-          >
-            ← Back
-          </Button>
-        </Link>
+        <Button
+          variant="text"
+          size="small"
+          sx={{ px: 0, minHeight: "auto" }}
+          onClick={handleBack}
+        >
+          ← Back
+        </Button>
         <Stack alignItems="flex-end" spacing={0.25}>
           {phase === "prompt" && (
             <Chip

@@ -1,3 +1,4 @@
+import { getSentencesByPatternId } from "@/entities/pattern/api/pattern-api";
 import { FirstPassMode } from "@/features/pattern-first-pass";
 
 type FirstPassPageProps = {
@@ -6,5 +7,6 @@ type FirstPassPageProps = {
 
 export default async function FirstPassPage({ params }: FirstPassPageProps) {
   const { patternId } = await params;
-  return <FirstPassMode patternId={patternId} />;
+  const sentences = await getSentencesByPatternId(patternId);
+  return <FirstPassMode patternId={patternId} initialSentences={sentences} />;
 }

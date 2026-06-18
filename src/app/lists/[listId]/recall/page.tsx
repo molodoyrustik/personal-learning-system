@@ -1,3 +1,4 @@
+import { getWordsByListId } from "@/entities/word/api/word-api";
 import { RecallMode } from "@/features/word-recall";
 
 type RecallPageProps = {
@@ -6,6 +7,6 @@ type RecallPageProps = {
 
 export default async function RecallPage({ params }: RecallPageProps) {
   const { listId } = await params;
-
-  return <RecallMode listId={listId} />;
+  const words = await getWordsByListId(listId);
+  return <RecallMode listId={listId} initialWords={words} />;
 }

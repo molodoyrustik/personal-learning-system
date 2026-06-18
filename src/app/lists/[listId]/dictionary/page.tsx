@@ -1,3 +1,4 @@
+import { getWordsByListId } from "@/entities/word/api/word-api";
 import { DictionaryMode } from "@/features/word-dictionary";
 
 type DictionaryPageProps = {
@@ -6,6 +7,6 @@ type DictionaryPageProps = {
 
 export default async function DictionaryPage({ params }: DictionaryPageProps) {
   const { listId } = await params;
-
-  return <DictionaryMode listId={listId} />;
+  const words = await getWordsByListId(listId);
+  return <DictionaryMode listId={listId} initialWords={words} />;
 }

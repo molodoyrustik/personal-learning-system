@@ -1,125 +1,89 @@
 "use client";
 
 import { Button, Card, CardContent, Stack, Typography } from "@mui/material";
-import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
-import { useAppStore } from "@/shared/model/app-store";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import type { Word } from "@/entities/word/model/types";
+import { selectWordAction, rejectWordAction } from "@/entities/word/api/word-actions";
 
 type SelectionModeProps = {
   listId: string;
+  initialWords: Word[];
 };
 
-export function SelectionMode({ listId }: SelectionModeProps) {
-  const allWords = useAppStore((state) => state.words);
-  const selectWord = useAppStore((state) => state.selectWord);
-  const rejectWord = useAppStore((state) => state.rejectWord);
+export function SelectionMode({ listId, initialWords }: SelectionModeProps) {
+  const router = useRouter();
+  function goBack() { router.refresh(); router.push(`/lists/${listId}`); }
 
-  // Capture the session queue once on mount (word IDs only)
-  const allWordsRef = useRef(allWords);
-  const [queue, setQueue] = useState<string[]>(() =>
-    allWordsRef.current
-      .filter((w) => w.listId === listId && w.status === "new")
-      .map((w) => w.id),
+  const [queue, setQueue] = useState<Word[]>(() =>
+    initialWords.filter((w) => w.status === "new"),
   );
-
-  const total = queue.length;
-
-  // Build a map for fast word lookup by id
-  const wordsMap = useMemo(
-    () => new Map(allWords.map((w) => [w.id, w])),
-    [allWords],
-  );
-
-  // Track how many words have been committed (selected or rejected)
   const [processed, setProcessed] = useState(0);
 
-  const currentId = queue[0] ?? null;
-  const current = currentId ? (wordsMap.get(currentId) ?? null) : null;
+  const total = queue.length;
+  const current = queue[0] ?? null;
   const isFinished = queue.length === 0;
 
-  function handleNeedToLearn() {
-    if (!currentId) return;
-    selectWord(currentId);
+  async function handleNeedToLearn() {
+    if (!current) return;
+    await selectWordAction(current.id);
     setProcessed((n) => n + 1);
     setQueue((q) => q.slice(1));
   }
 
-  function handleAlreadyKnow() {
-    if (!currentId) return;
-    rejectWord(currentId, "already_known");
+  async function handleAlreadyKnow() {
+    if (!current) return;
+    await rejectWordAction(current.id, "already_known");
     setProcessed((n) => n + 1);
     setQueue((q) => q.slice(1));
   }
 
   function handleSkip() {
-    // Move current word to the end of the queue
     setQueue((q) => [...q.slice(1), q[0]]);
   }
 
   if (total === 0) {
     return (
-      <Stack
-        spacing={3}
-        alignItems="center"
-        justifyContent="center"
-        sx={{ minHeight: "60vh" }}
-      >
+      <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
         <Stack spacing={1} alignItems="center">
           <Typography variant="h2">Nothing to select</Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center">
             There are no new words in this list.
           </Typography>
         </Stack>
-        <Link href={`/lists/${listId}`} style={{ textDecoration: "none" }}>
-          <Button variant="outlined">Back to list</Button>
-        </Link>
+        <Button variant="outlined" onClick={goBack}>Back to list</Button>
       </Stack>
     );
   }
 
   if (isFinished) {
     return (
-      <Stack
-        spacing={3}
-        alignItems="center"
-        justifyContent="center"
-        sx={{ minHeight: "60vh" }}
-      >
+      <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
         <Stack spacing={1} alignItems="center">
           <Typography variant="h2">Selection complete</Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center">
             All new words in this list have been processed.
           </Typography>
         </Stack>
-        <Link href={`/lists/${listId}`} style={{ textDecoration: "none" }}>
-          <Button variant="outlined">Back to list</Button>
-        </Link>
+        <Button variant="outlined" onClick={goBack}>Back to list</Button>
       </Stack>
     );
   }
 
   return (
     <Stack spacing={3}>
-      {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Link href={`/lists/${listId}`} style={{ textDecoration: "none" }}>
-          <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }}>
-            ← Back
-          </Button>
-        </Link>
+        <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} onClick={goBack}>
+          ← Back
+        </Button>
         <Typography variant="caption" color="text.secondary">
           {processed} / {total} done
         </Typography>
       </Stack>
 
-      {/* Word card */}
       <Card>
         <CardContent>
-          <Stack
-            alignItems="center"
-            justifyContent="center"
-            sx={{ minHeight: 160, py: 2 }}
-          >
+          <Stack alignItems="center" justifyContent="center" sx={{ minHeight: 160, py: 2 }}>
             <Typography variant="h1" textAlign="center">
               {current?.sourceText ?? "—"}
             </Typography>
@@ -127,7 +91,6 @@ export function SelectionMode({ listId }: SelectionModeProps) {
         </CardContent>
       </Card>
 
-      {/* Actions */}
       <Stack spacing={1.5}>
         <Button variant="contained" fullWidth onClick={handleNeedToLearn}>
           Need to learn

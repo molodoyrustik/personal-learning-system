@@ -1,3 +1,4 @@
+import { getWordsByListId } from "@/entities/word/api/word-api";
 import { SelectionMode } from "@/features/word-selection";
 
 type SelectionPageProps = {
@@ -6,6 +7,6 @@ type SelectionPageProps = {
 
 export default async function SelectionPage({ params }: SelectionPageProps) {
   const { listId } = await params;
-
-  return <SelectionMode listId={listId} />;
+  const words = await getWordsByListId(listId);
+  return <SelectionMode listId={listId} initialWords={words} />;
 }

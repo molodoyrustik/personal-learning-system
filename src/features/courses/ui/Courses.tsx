@@ -1,5 +1,3 @@
-"use client";
-
 import {
   Button,
   Card,
@@ -10,12 +8,14 @@ import {
   Typography,
 } from "@mui/material";
 import Link from "next/link";
-import { useCoursesStore } from "@/shared/model/courses-store";
+import type { Course } from "@/entities/course";
 
-export function Courses() {
-  const courses = useCoursesStore((s) => s.courses);
-  const lessons = useCoursesStore((s) => s.lessons);
+type CoursesProps = {
+  courses: Course[];
+  lessonCounts: Record<string, number>;
+};
 
+export function Courses({ courses, lessonCounts }: CoursesProps) {
   return (
     <Container sx={{ py: 4 }}>
       <Stack spacing={3}>
@@ -33,9 +33,7 @@ export function Courses() {
             </Typography>
           )}
           {courses.map((course) => {
-            const courseLessons = lessons
-              .filter((l) => l.courseId === course.id)
-              .sort((a, b) => a.order - b.order);
+            const count = lessonCounts[course.id] ?? 0;
             return (
               <Link
                 key={course.id}
@@ -55,7 +53,7 @@ export function Courses() {
                           )}
                         </Stack>
                         <Typography variant="body2" color="text.secondary">
-                          {courseLessons.length} {courseLessons.length === 1 ? "lesson" : "lessons"}
+                          {count} {count === 1 ? "lesson" : "lessons"}
                         </Typography>
                       </Stack>
                     </CardContent>
