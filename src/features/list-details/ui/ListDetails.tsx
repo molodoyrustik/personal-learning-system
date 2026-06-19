@@ -6,12 +6,17 @@ import {
   Card,
   CardContent,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Divider,
   Stack,
   Typography,
 } from "@mui/material";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState, useTransition } from "react";
 import type { List } from "@/entities/list";
 import type { Word, WordStatus } from "@/entities/word/model/types";
 import {
@@ -19,6 +24,7 @@ import {
   isInEncodingQueue,
   isInSkippedQueue,
 } from "@/shared/model/app-store";
+import { deleteListAction } from "../actions";
 
 type ListDetailsProps = {
   list: List;
@@ -56,6 +62,13 @@ const STATUS_COLORS: Record<
 };
 
 export function ListDetails({ list, words, reviewCount }: ListDetailsProps) {
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  function handleDeleteConfirm() {
+    startTransition(() => deleteListAction(list.id));
+  }
+
   const selectionQueue = useMemo(() => words.filter((w) => w.status === "new"), [words]);
   const encodingQueue = useMemo(() => words.filter(isInEncodingQueue), [words]);
   const skippedQueue = useMemo(() => words.filter(isInSkippedQueue), [words]);
@@ -111,10 +124,35 @@ export function ListDetails({ list, words, reviewCount }: ListDetailsProps) {
               ← Back to Lists
             </Button>
           </Link>
-          <Link href={`/lists/${list.id}/edit`} style={{ textDecoration: "none" }}>
-            <Button variant="outlined" size="small">+ Add words</Button>
-          </Link>
+          <Stack direction="row" spacing={1}>
+            <Link href={`/lists/${list.id}/edit`} style={{ textDecoration: "none" }}>
+              <Button variant="outlined" size="small">+ Add words</Button>
+            </Link>
+            <Button
+              variant="outlined"
+              size="small"
+              color="error"
+              onClick={() => setDeleteOpen(true)}
+            >
+              Delete
+            </Button>
+          </Stack>
         </Stack>
+
+        <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>
+          <DialogTitle>Delete list?</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              This will permanently delete &quot;{list.name}&quot; and all its words. This action cannot be undone.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteOpen(false)} disabled={isPending}>Cancel</Button>
+            <Button color="error" onClick={handleDeleteConfirm} disabled={isPending}>
+              {isPending ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogActions>
+        </Dialog>
         <Typography variant="h1">{list.name}</Typography>
         <Typography variant="body2" color="text.secondary">
           {list.sourceLanguage} → {list.targetLanguage}

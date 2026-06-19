@@ -5,12 +5,17 @@ import {
   Card,
   CardContent,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Divider,
   Stack,
   Typography,
 } from "@mui/material";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import type { Pattern, PatternRun, PatternSentence, SentenceStatus } from "@/entities/pattern";
 import {
   deletePatternAction,
@@ -54,7 +59,13 @@ function formatDuration(sec: number): string {
 
 export function PatternDetails({ pattern, sentences, runs }: PatternDetailsProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const patternId = pattern.id;
+
+  function handleDeleteConfirm() {
+    startTransition(() => deletePatternAction(patternId));
+  }
 
   const firstPassCount = useMemo(
     () => getFirstPassQueue(sentences, patternId).length,
@@ -271,13 +282,28 @@ export function PatternDetails({ pattern, sentences, runs }: PatternDetailsProps
             <Button
               variant="outlined"
               color="error"
-              onClick={() => deletePatternAction(patternId)}
+              onClick={() => setDeleteOpen(true)}
             >
               Delete pattern
             </Button>
           </Stack>
         </CardContent>
       </Card>
+
+      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>
+        <DialogTitle>Delete pattern?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            This will permanently delete &quot;{pattern.name}&quot; and all its sentences. This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteOpen(false)} disabled={isPending}>Cancel</Button>
+          <Button color="error" onClick={handleDeleteConfirm} disabled={isPending}>
+            {isPending ? "Deleting…" : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <ImportSentencesDrawer
         open={drawerOpen}
