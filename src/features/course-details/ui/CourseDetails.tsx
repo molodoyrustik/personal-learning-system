@@ -11,50 +11,38 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import { useCoursesStore } from "@/shared/model/courses-store";
+import { useState } from "react";
+import type { Course } from "@/entities/course";
+import type { Lesson } from "@/entities/lesson";
+import { deleteCourseAction } from "@/entities/course/api/course-actions";
+import { createLessonAction, deleteLessonAction } from "@/entities/lesson/api/lesson-actions";
 
 type CourseDetailsProps = {
-  courseId: string;
+  course: Course;
+  lessons: Lesson[];
 };
 
-export function CourseDetails({ courseId }: CourseDetailsProps) {
+export function CourseDetails({ course, lessons }: CourseDetailsProps) {
   const router = useRouter();
-
-  const course = useCoursesStore((s) => s.courses.find((c) => c.id === courseId));
-  const allLessons = useCoursesStore((s) => s.lessons);
-  const lessons = useMemo(
-    () => allLessons.filter((l) => l.courseId === courseId).sort((a, b) => a.order - b.order),
-    [allLessons, courseId],
-  );
-  const createLesson = useCoursesStore((s) => s.createLesson);
-  const deleteLesson = useCoursesStore((s) => s.deleteLesson);
-  const deleteCourse = useCoursesStore((s) => s.deleteCourse);
-
   const [addingLesson, setAddingLesson] = useState(false);
   const [lessonTitle, setLessonTitle] = useState("");
 
-  if (!course) {
-    return (
-      <Stack spacing={2}>
-        <Button variant="text" onClick={() => router.push("/courses")} size="small" sx={{ alignSelf: "flex-start" }}>
-          ← Courses
-        </Button>
-        <Typography color="text.secondary">Course not found.</Typography>
-      </Stack>
-    );
-  }
-
-  function handleAddLesson() {
+  async function handleAddLesson() {
     const t = lessonTitle.trim();
     if (!t) return;
-    createLesson({ courseId, title: t });
+    await createLessonAction({ courseId: course.id, title: t });
     setLessonTitle("");
     setAddingLesson(false);
+    router.refresh();
   }
 
-  function handleDeleteCourse() {
-    deleteCourse(courseId);
+  async function handleDeleteLesson(lessonId: string) {
+    await deleteLessonAction(lessonId, course.id);
+    router.refresh();
+  }
+
+  async function handleDeleteCourse() {
+    await deleteCourseAction(course.id);
     router.push("/courses");
   }
 
@@ -133,7 +121,7 @@ export function CourseDetails({ courseId }: CourseDetailsProps) {
             <CardContent>
               <Stack direction="row" justifyContent="space-between" alignItems="center">
                 <Link
-                  href={`/courses/${courseId}/lessons/${lesson.id}`}
+                  href={`/courses/${course.id}/lessons/${lesson.id}`}
                   style={{ textDecoration: "none", color: "inherit", flex: 1 }}
                 >
                   <Stack direction="row" spacing={1.5} alignItems="center">
@@ -146,7 +134,7 @@ export function CourseDetails({ courseId }: CourseDetailsProps) {
                 <IconButton
                   size="small"
                   color="error"
-                  onClick={() => deleteLesson(lesson.id)}
+                  onClick={() => handleDeleteLesson(lesson.id)}
                   aria-label="Delete lesson"
                 >
                   ✕

@@ -24,7 +24,6 @@ export function makeWord(params: {
     listId: params.listId,
     sourceText: params.sourceText,
     targetText: params.targetText,
-    type: "image_noun",
     status: "new",
     selectionDecision: null,
     canVisualizeMeaning: null,

@@ -11,16 +11,17 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { useMemo } from "react";
-import type { WordStatus } from "@/entities/word/model/types";
+import type { List } from "@/entities/list";
+import type { Word, WordStatus } from "@/entities/word/model/types";
 import {
   isInDictionaryQueue,
   isInEncodingQueue,
   isInSkippedQueue,
-  useAppStore,
 } from "@/shared/model/app-store";
 
 type ListDetailsProps = {
-  listId: string;
+  list: List;
+  words: Word[];
 };
 
 const STATUS_LABELS: Record<WordStatus, string> = {
@@ -48,115 +49,37 @@ const STATUS_COLORS: Record<
   mastered: "success",
 };
 
-export function ListDetails({ listId }: ListDetailsProps) {
-  const lists = useAppStore((state) => state.lists);
-  const allWords = useAppStore((state) => state.words);
-
-  const list = useMemo(
-    () => lists.find((l) => l.id === listId),
-    [lists, listId],
-  );
-  const words = useMemo(
-    () => allWords.filter((w) => w.listId === listId),
-    [allWords, listId],
-  );
-
-  const selectionQueue = useMemo(
-    () => words.filter((w) => w.status === "new"),
-    [words],
-  );
+export function ListDetails({ list, words }: ListDetailsProps) {
+  const selectionQueue = useMemo(() => words.filter((w) => w.status === "new"), [words]);
   const encodingQueue = useMemo(() => words.filter(isInEncodingQueue), [words]);
   const skippedQueue = useMemo(() => words.filter(isInSkippedQueue), [words]);
-  const dictionaryQueue = useMemo(
-    () => words.filter(isInDictionaryQueue),
-    [words],
-  );
+  const dictionaryQueue = useMemo(() => words.filter(isInDictionaryQueue), [words]);
   const recallQueue = useMemo(
-    () =>
-      words.filter(
-        (w) =>
-          w.status === "encoded" ||
-          w.status === "learning" ||
-          w.status === "weak",
-      ),
+    () => words.filter((w) => w.status === "encoded" || w.status === "learning" || w.status === "weak"),
     [words],
   );
 
-  if (!list) {
-    return (
-      <Stack spacing={2}>
-        <Typography variant="body1" color="text.secondary">
-          List not found.
-        </Typography>
-        <Link href="/lists" style={{ textDecoration: "none" }}>
-          <Button variant="outlined">Back to Lists</Button>
-        </Link>
-      </Stack>
-    );
-  }
-
-  const statusGroups: { label: string; count: number }[] = [
+  const statusGroups = [
     { label: "New", count: words.filter((w) => w.status === "new").length },
-    {
-      label: "Selected",
-      count: words.filter((w) => w.status === "selected").length,
-    },
-    {
-      label: "Encoded",
-      count: words.filter((w) => w.status === "encoded").length,
-    },
-    {
-      label: "Skipped",
-      count: words.filter((w) => w.status === "skipped").length,
-    },
-    {
-      label: "Learning",
-      count: words.filter((w) => w.status === "learning").length,
-    },
+    { label: "Selected", count: words.filter((w) => w.status === "selected").length },
+    { label: "Encoded", count: words.filter((w) => w.status === "encoded").length },
+    { label: "Skipped", count: words.filter((w) => w.status === "skipped").length },
+    { label: "Learning", count: words.filter((w) => w.status === "learning").length },
     { label: "Weak", count: words.filter((w) => w.status === "weak").length },
-    {
-      label: "Mastered",
-      count: words.filter((w) => w.status === "mastered").length,
-    },
+    { label: "Mastered", count: words.filter((w) => w.status === "mastered").length },
     { label: "Dictionary", count: dictionaryQueue.length },
   ];
 
   const modes = [
-    {
-      label: "Selection Mode",
-      href: "selection",
-      count: selectionQueue.length,
-      active: selectionQueue.length > 0,
-    },
-    {
-      label: "Encoding Mode",
-      href: "encoding",
-      count: encodingQueue.length,
-      active: encodingQueue.length > 0,
-    },
-    {
-      label: "Skipped Mode",
-      href: "skipped",
-      count: skippedQueue.length,
-      active: skippedQueue.length > 0,
-    },
-    {
-      label: "Dictionary Queue",
-      href: "dictionary",
-      count: dictionaryQueue.length,
-      active: dictionaryQueue.length > 0,
-    },
-    {
-      label: "Recall Mode",
-      href: "recall",
-      count: recallQueue.length,
-      active: recallQueue.length > 0,
-    },
+    { label: "Selection Mode", href: "selection", count: selectionQueue.length, active: selectionQueue.length > 0 },
+    { label: "Encoding Mode", href: "encoding", count: encodingQueue.length, active: encodingQueue.length > 0 },
+    { label: "Skipped Mode", href: "skipped", count: skippedQueue.length, active: skippedQueue.length > 0 },
+    { label: "Dictionary Queue", href: "dictionary", count: dictionaryQueue.length, active: dictionaryQueue.length > 0 },
+    { label: "Recall Mode", href: "recall", count: recallQueue.length, active: recallQueue.length > 0 },
   ] as const;
 
   return (
     <>
-      {/* Header */}
       <Stack spacing={0.5}>
         <Link href="/lists" style={{ textDecoration: "none" }}>
           <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }}>
@@ -177,7 +100,6 @@ export function ListDetails({ listId }: ListDetailsProps) {
         </Typography>
       </Stack>
 
-      {/* Summary */}
       <Card>
         <CardContent>
           <Stack spacing={1.5}>
@@ -197,7 +119,6 @@ export function ListDetails({ listId }: ListDetailsProps) {
         </CardContent>
       </Card>
 
-      {/* Actions */}
       <Card>
         <CardContent>
           <Stack spacing={2}>
@@ -206,7 +127,7 @@ export function ListDetails({ listId }: ListDetailsProps) {
               {modes.map(({ label, href, count, active }) => (
                 <Link
                   key={href}
-                  href={`/lists/${listId}/${href}`}
+                  href={`/lists/${list.id}/${href}`}
                   style={{ textDecoration: "none" }}
                   aria-disabled={!active}
                   onClick={(e) => !active && e.preventDefault()}
@@ -232,7 +153,6 @@ export function ListDetails({ listId }: ListDetailsProps) {
         </CardContent>
       </Card>
 
-      {/* Words list */}
       <Card>
         <CardContent>
           <Stack spacing={1.5}>

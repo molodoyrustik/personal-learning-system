@@ -15,24 +15,15 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import type { LanguageCode } from "@/entities/list";
 import { ImportDrawer, type ImportedWord } from "@/features/import-words";
+import { createListWithWords } from "@/features/add-new-list/actions";
+import { addWordListToLessonAction } from "@/entities/lesson/api/lesson-actions";
 import { generateId } from "@/shared/lib/ids";
-import { useAppStore } from "@/shared/model/app-store";
-import { useCoursesStore } from "@/shared/model/courses-store";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 type PreviewWord = { id: string; sourceText: string; targetText: string };
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 const LANGUAGE_LABELS: Record<LanguageCode, string> = {
   ru: "Russian",
@@ -43,17 +34,10 @@ function makePreviewWord(sourceText: string, targetText: string): PreviewWord {
   return { id: generateId(), sourceText, targetText };
 }
 
-function deduplicateWords(
-  existing: PreviewWord[],
-  incoming: ImportedWord[],
-): PreviewWord[] {
+function deduplicateWords(existing: PreviewWord[], incoming: ImportedWord[]): PreviewWord[] {
   const keys = new Set(existing.map((w) => `${w.sourceText}||${w.targetText}`));
   return incoming.filter((w) => !keys.has(`${w.sourceText}||${w.targetText}`));
 }
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
 
 type AddNewListProps = {
   lessonId?: string;
@@ -62,30 +46,21 @@ type AddNewListProps = {
 
 export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
   const router = useRouter();
-  const createList = useAppStore((state) => state.createList);
-  const addWordsToList = useAppStore((state) => state.addWordsToList);
-  const addWordListToLesson = useCoursesStore((s) => s.addWordListToLesson);
   const fromLesson = !!(lessonId && courseId);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-
   const [sourceLanguage, setSourceLanguage] = useState<LanguageCode>("ru");
   const [targetLanguage, setTargetLanguage] = useState<LanguageCode>("en");
-
   const [manualSourceText, setManualSourceText] = useState("");
   const [manualTargetText, setManualTargetText] = useState("");
   const sourceInputRef = useRef<HTMLInputElement>(null);
-
   const [words, setWords] = useState<PreviewWord[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const languagesValid = sourceLanguage !== targetLanguage;
-  const canCreate =
-    name.trim().length > 0 && words.length > 0 && languagesValid;
-
-  const sourceWordLabel = `${LANGUAGE_LABELS[sourceLanguage]} word`;
-  const targetWordLabel = `${LANGUAGE_LABELS[targetLanguage]} word`;
+  const canCreate = name.trim().length > 0 && words.length > 0 && languagesValid;
 
   function handleAddWord() {
     const sourceText = manualSourceText.trim();
@@ -112,33 +87,32 @@ export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
     setDrawerOpen(false);
   }
 
-  function handleCreate() {
-    if (!canCreate) return;
-    const list = createList({
-      name: name.trim(),
-      description: description.trim() || null,
-      sourceLanguage,
-      targetLanguage,
-    });
-    addWordsToList({
-      listId: list.id,
-      words: words.map(({ sourceText, targetText }) => ({
-        sourceText,
-        targetText,
-      })),
-    });
-    if (fromLesson) {
-      addWordListToLesson(lessonId!, list.id);
-      router.push(`/courses/${courseId}/lessons/${lessonId}`);
-    } else {
-      router.push(`/lists/${list.id}`);
+  async function handleCreate() {
+    if (!canCreate || loading) return;
+    setLoading(true);
+    try {
+      const { listId } = await createListWithWords({
+        name: name.trim(),
+        description: description.trim() || null,
+        sourceLanguage,
+        targetLanguage,
+        words: words.map(({ sourceText, targetText }) => ({ sourceText, targetText })),
+      });
+      if (fromLesson) {
+        await addWordListToLessonAction(lessonId!, listId, courseId!);
+        router.refresh();
+        router.push(`/courses/${courseId}/lessons/${lessonId}`);
+      } else {
+        router.push(`/lists/${listId}`);
+      }
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
     <Container sx={{ py: 4 }}>
       <Stack spacing={3}>
-        {/* Header */}
         <Stack spacing={0.5}>
           <Button
             variant="text"
@@ -155,7 +129,6 @@ export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
           <Typography variant="h1">Create list</Typography>
         </Stack>
 
-        {/* List info */}
         <Card>
           <CardContent>
             <Stack spacing={2}>
@@ -178,35 +151,26 @@ export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
                 multiline
                 minRows={2}
               />
-
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                 <FormControl fullWidth size="small">
-                  <InputLabel id="source-lang-label">
-                    Source language
-                  </InputLabel>
+                  <InputLabel id="source-lang-label">Source language</InputLabel>
                   <Select
                     labelId="source-lang-label"
                     label="Source language"
                     value={sourceLanguage}
-                    onChange={(e) =>
-                      setSourceLanguage(e.target.value as LanguageCode)
-                    }
+                    onChange={(e) => setSourceLanguage(e.target.value as LanguageCode)}
                   >
                     <MenuItem value="ru">Russian (ru)</MenuItem>
                     <MenuItem value="en">English (en)</MenuItem>
                   </Select>
                 </FormControl>
                 <FormControl fullWidth size="small">
-                  <InputLabel id="target-lang-label">
-                    Target language
-                  </InputLabel>
+                  <InputLabel id="target-lang-label">Target language</InputLabel>
                   <Select
                     labelId="target-lang-label"
                     label="Target language"
                     value={targetLanguage}
-                    onChange={(e) =>
-                      setTargetLanguage(e.target.value as LanguageCode)
-                    }
+                    onChange={(e) => setTargetLanguage(e.target.value as LanguageCode)}
                   >
                     <MenuItem value="ru">Russian (ru)</MenuItem>
                     <MenuItem value="en">English (en)</MenuItem>
@@ -215,37 +179,26 @@ export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
               </Stack>
               {!languagesValid && (
                 <Typography variant="caption" color="text.secondary">
-                  Source and target language must be different to create a list.
+                  Source and target language must be different.
                 </Typography>
               )}
             </Stack>
           </CardContent>
         </Card>
 
-        {/* Words */}
         <Card>
           <CardContent>
             <Stack spacing={2}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-              >
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
                 <Typography variant="h3">Words</Typography>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => setDrawerOpen(true)}
-                >
+                <Button variant="outlined" size="small" onClick={() => setDrawerOpen(true)}>
                   + Import
                 </Button>
               </Stack>
-
-              {/* Manual add row */}
               <Stack direction="row" spacing={1} alignItems="flex-start">
                 <TextField
                   inputRef={sourceInputRef}
-                  label={sourceWordLabel}
+                  label={`${LANGUAGE_LABELS[sourceLanguage]} word`}
                   placeholder="…"
                   size="small"
                   fullWidth
@@ -254,7 +207,7 @@ export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
                   onKeyDown={(e) => e.key === "Enter" && handleAddWord()}
                 />
                 <TextField
-                  label={targetWordLabel}
+                  label={`${LANGUAGE_LABELS[targetLanguage]} word`}
                   placeholder="…"
                   size="small"
                   fullWidth
@@ -265,16 +218,12 @@ export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
                 <Button
                   variant="contained"
                   onClick={handleAddWord}
-                  disabled={
-                    !manualSourceText.trim() || !manualTargetText.trim()
-                  }
+                  disabled={!manualSourceText.trim() || !manualTargetText.trim()}
                   sx={{ flexShrink: 0, whiteSpace: "nowrap" }}
                 >
                   Add
                 </Button>
               </Stack>
-
-              {/* Preview list */}
               {words.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">
                   No words yet. Add manually or import.
@@ -292,9 +241,7 @@ export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
                         sx={{ py: 1 }}
                       >
                         <Stack direction="row" spacing={2} alignItems="center">
-                          <Typography variant="body1">
-                            {word.sourceText}
-                          </Typography>
+                          <Typography variant="body1">{word.sourceText}</Typography>
                           <Typography variant="body2" color="text.secondary">
                             {word.targetText}
                           </Typography>
@@ -318,14 +265,13 @@ export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
           </CardContent>
         </Card>
 
-        {/* Create button */}
         <Button
           variant="contained"
           fullWidth
-          disabled={!canCreate}
+          disabled={!canCreate || loading}
           onClick={handleCreate}
         >
-          Create list
+          {loading ? "Creating…" : "Create list"}
         </Button>
       </Stack>
 

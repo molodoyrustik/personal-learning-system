@@ -1,3 +1,4 @@
+import { getWordsByListId } from "@/entities/word/api/word-api";
 import { EncodingMode } from "@/features/word-encoding";
 
 type EncodingPageProps = {
@@ -6,6 +7,6 @@ type EncodingPageProps = {
 
 export default async function EncodingPage({ params }: EncodingPageProps) {
   const { listId } = await params;
-
-  return <EncodingMode listId={listId} />;
+  const words = await getWordsByListId(listId);
+  return <EncodingMode listId={listId} initialWords={words} />;
 }

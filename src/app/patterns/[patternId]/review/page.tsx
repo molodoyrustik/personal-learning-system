@@ -1,3 +1,4 @@
+import { getSentencesByPatternId } from "@/entities/pattern/api/pattern-api";
 import { ReviewMode } from "@/features/pattern-review";
 
 type ReviewPageProps = {
@@ -6,5 +7,6 @@ type ReviewPageProps = {
 
 export default async function ReviewPage({ params }: ReviewPageProps) {
   const { patternId } = await params;
-  return <ReviewMode patternId={patternId} />;
+  const sentences = await getSentencesByPatternId(patternId);
+  return <ReviewMode patternId={patternId} initialSentences={sentences} />;
 }

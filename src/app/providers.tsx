@@ -3,10 +3,6 @@
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 import type { ReactNode } from "react";
-import { AppStoreProvider } from "@/shared/model/app-store";
-import { CharacteristicsStoreProvider } from "@/shared/model/characteristics-store";
-import { CoursesStoreProvider } from "@/shared/model/courses-store";
-import { PatternsStoreProvider } from "@/shared/model/patterns-store";
 import { AppTopNav } from "@/shared/ui/AppTopNav";
 import { theme } from "@/theme/theme";
 
@@ -19,16 +15,8 @@ export function Providers({ children }: ProvidersProps) {
     <AppRouterCacheProvider>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <AppStoreProvider>
-          <CharacteristicsStoreProvider>
-            <PatternsStoreProvider>
-              <CoursesStoreProvider>
-                <AppTopNav />
-                {children}
-              </CoursesStoreProvider>
-            </PatternsStoreProvider>
-          </CharacteristicsStoreProvider>
-        </AppStoreProvider>
+        <AppTopNav />
+        {children}
       </ThemeProvider>
     </AppRouterCacheProvider>
   );

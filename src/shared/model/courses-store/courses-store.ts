@@ -54,7 +54,6 @@ export function createCoursesStore() {
             id,
             title: input.title,
             description: input.description ?? null,
-            lessonIds: [],
             createdAt: now,
             updatedAt: now,
           };
@@ -91,18 +90,11 @@ export function createCoursesStore() {
             description: input.description ?? null,
             order,
             wordListIds: [],
-            patternListIds: [],
+            patternIds: [],
             createdAt: now,
             updatedAt: now,
           };
-          set((s) => ({
-            lessons: [...s.lessons, lesson],
-            courses: s.courses.map((c) =>
-              c.id === input.courseId
-                ? { ...c, lessonIds: [...c.lessonIds, id], updatedAt: now }
-                : c,
-            ),
-          }));
+          set((s) => ({ lessons: [...s.lessons, lesson] }));
           return id;
         },
 
@@ -118,20 +110,7 @@ export function createCoursesStore() {
         },
 
         deleteLesson: (id) => {
-          const lesson = get().lessons.find((l) => l.id === id);
-          if (!lesson) return;
-          set((s) => ({
-            lessons: s.lessons.filter((l) => l.id !== id),
-            courses: s.courses.map((c) =>
-              c.id === lesson.courseId
-                ? {
-                    ...c,
-                    lessonIds: c.lessonIds.filter((lid) => lid !== id),
-                    updatedAt: nowISO(),
-                  }
-                : c,
-            ),
-          }));
+          set((s) => ({ lessons: s.lessons.filter((l) => l.id !== id) }));
         },
 
         getLessonById: (id) => get().lessons.find((l) => l.id === id),
@@ -174,9 +153,9 @@ export function createCoursesStore() {
         addPatternListToLesson: (lessonId, patternId) => {
           set((s) => ({
             lessons: patchLesson(s.lessons, lessonId, (l) =>
-              l.patternListIds.includes(patternId)
+              l.patternIds.includes(patternId)
                 ? l
-                : { ...l, patternListIds: [...l.patternListIds, patternId], updatedAt: nowISO() },
+                : { ...l, patternIds: [...l.patternIds, patternId], updatedAt: nowISO() },
             ),
           }));
         },
@@ -185,7 +164,7 @@ export function createCoursesStore() {
           set((s) => ({
             lessons: patchLesson(s.lessons, lessonId, (l) => ({
               ...l,
-              patternListIds: l.patternListIds.filter((id) => id !== patternId),
+              patternIds: l.patternIds.filter((id) => id !== patternId),
               updatedAt: nowISO(),
             })),
           }));

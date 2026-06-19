@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(NODE_TLS_REJECT_UNAUTHORIZED=0 npx supabase *)"
     ]
   }
 }

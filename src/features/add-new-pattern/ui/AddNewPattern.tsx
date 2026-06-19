@@ -10,46 +10,25 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import Link from "next/link";
-import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 import {
   ImportSentencesDrawer,
   type ImportedSentence,
 } from "@/features/import-sentences";
+import { createPatternWithSentences } from "@/entities/pattern/api/pattern-actions";
+import { addPatternToLessonAction } from "@/entities/lesson/api/lesson-actions";
 import { generateId } from "@/shared/lib/ids";
-import { useCoursesStore } from "@/shared/model/courses-store";
-import { usePatternsStore } from "@/shared/model/patterns-store";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-type PreviewSentence = {
-  id: string;
-  sourceText: string;
-  targetText: string;
-};
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+type PreviewSentence = { id: string; sourceText: string; targetText: string };
 
 function deduplicateSentences(
   existing: PreviewSentence[],
   incoming: ImportedSentence[],
 ): PreviewSentence[] {
-  const keys = new Set(
-    existing.map((s) => `${s.sourceText}||${s.targetText}`),
-  );
-  return incoming.filter(
-    (s) => !keys.has(`${s.sourceText}||${s.targetText}`),
-  );
+  const keys = new Set(existing.map((s) => `${s.sourceText}||${s.targetText}`));
+  return incoming.filter((s) => !keys.has(`${s.sourceText}||${s.targetText}`));
 }
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
 
 type AddNewPatternProps = {
   lessonId?: string;
@@ -58,20 +37,16 @@ type AddNewPatternProps = {
 
 export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
   const router = useRouter();
-  const createPattern = usePatternsStore((s) => s.createPattern);
-  const addSentencesBulk = usePatternsStore((s) => s.addSentencesBulk);
-  const addPatternListToLesson = useCoursesStore((s) => s.addPatternListToLesson);
   const fromLesson = !!(lessonId && courseId);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-
   const [manualSource, setManualSource] = useState("");
   const [manualTarget, setManualTarget] = useState("");
   const sourceInputRef = useRef<HTMLInputElement>(null);
-
   const [sentences, setSentences] = useState<PreviewSentence[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const canCreate = name.trim().length > 0 && sentences.length > 0;
 
@@ -83,10 +58,7 @@ export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
       (s) => s.sourceText === sourceText && s.targetText === targetText,
     );
     if (!isDuplicate) {
-      setSentences((prev) => [
-        ...prev,
-        { id: generateId(), sourceText, targetText },
-      ]);
+      setSentences((prev) => [...prev, { id: generateId(), sourceText, targetText }]);
     }
     setManualSource("");
     setManualTarget("");
@@ -103,31 +75,30 @@ export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
     setDrawerOpen(false);
   }
 
-  function handleCreate() {
-    if (!canCreate) return;
-    const pattern = createPattern({
-      name: name.trim(),
-      description: description.trim() || null,
-    });
-    addSentencesBulk({
-      patternId: pattern.id,
-      sentences: sentences.map(({ sourceText, targetText }) => ({
-        sourceText,
-        targetText,
-      })),
-    });
-    if (fromLesson) {
-      addPatternListToLesson(lessonId!, pattern.id);
-      router.push(`/courses/${courseId}/lessons/${lessonId}`);
-    } else {
-      router.push(`/patterns/${pattern.id}`);
+  async function handleCreate() {
+    if (!canCreate || loading) return;
+    setLoading(true);
+    try {
+      const { patternId } = await createPatternWithSentences({
+        name: name.trim(),
+        description: description.trim() || null,
+        sentences: sentences.map(({ sourceText, targetText }) => ({ sourceText, targetText })),
+      });
+      if (fromLesson) {
+        await addPatternToLessonAction(lessonId!, patternId, courseId!);
+        router.refresh();
+        router.push(`/courses/${courseId}/lessons/${lessonId}`);
+      } else {
+        router.push(`/patterns/${patternId}`);
+      }
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
     <div style={{ padding: "32px 0" }}>
       <Stack spacing={3}>
-        {/* Header */}
         <Stack spacing={0.5}>
           <Button
             variant="text"
@@ -144,7 +115,6 @@ export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
           <Typography variant="h1">Create pattern</Typography>
         </Stack>
 
-        {/* Pattern info */}
         <Card>
           <CardContent>
             <Stack spacing={2}>
@@ -171,26 +141,15 @@ export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
           </CardContent>
         </Card>
 
-        {/* Sentences */}
         <Card>
           <CardContent>
             <Stack spacing={2}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-              >
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
                 <Typography variant="h3">Sentences</Typography>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => setDrawerOpen(true)}
-                >
+                <Button variant="outlined" size="small" onClick={() => setDrawerOpen(true)}>
                   + Import
                 </Button>
               </Stack>
-
-              {/* Manual add */}
               <Stack spacing={1}>
                 <TextField
                   inputRef={sourceInputRef}
@@ -222,8 +181,6 @@ export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
                   </Button>
                 </Stack>
               </Stack>
-
-              {/* Preview list */}
               {sentences.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">
                   No sentences yet. Add manually or import.
@@ -242,9 +199,7 @@ export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
                         gap={1}
                       >
                         <Stack spacing={0.25} sx={{ flex: 1 }}>
-                          <Typography variant="body1">
-                            {s.sourceText}
-                          </Typography>
+                          <Typography variant="body1">{s.sourceText}</Typography>
                           <Typography variant="body2" color="text.secondary">
                             {s.targetText}
                           </Typography>
@@ -260,8 +215,7 @@ export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
                     ))}
                   </Stack>
                   <Typography variant="caption" color="text.secondary">
-                    {sentences.length}{" "}
-                    {sentences.length === 1 ? "sentence" : "sentences"} added
+                    {sentences.length} {sentences.length === 1 ? "sentence" : "sentences"} added
                   </Typography>
                 </>
               )}
@@ -269,14 +223,13 @@ export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
           </CardContent>
         </Card>
 
-        {/* Create button */}
         <Button
           variant="contained"
           fullWidth
-          disabled={!canCreate}
+          disabled={!canCreate || loading}
           onClick={handleCreate}
         >
-          Create pattern
+          {loading ? "Creating…" : "Create pattern"}
         </Button>
       </Stack>
 

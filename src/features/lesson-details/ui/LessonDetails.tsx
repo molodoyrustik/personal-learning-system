@@ -15,70 +15,65 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useAppStore } from "@/shared/model/app-store";
-import { useCoursesStore } from "@/shared/model/courses-store";
-import { usePatternsStore } from "@/shared/model/patterns-store";
+import type { List } from "@/entities/list";
+import type { Lesson } from "@/entities/lesson";
+import type { Pattern } from "@/entities/pattern";
+import {
+  addWordListToLessonAction,
+  removeWordListFromLessonAction,
+  addPatternToLessonAction,
+  removePatternFromLessonAction,
+} from "@/entities/lesson/api/lesson-actions";
 
 type LessonDetailsProps = {
   courseId: string;
-  lessonId: string;
+  lesson: Lesson;
+  allLists: List[];
+  allPatterns: Pattern[];
 };
 
-export function LessonDetails({ courseId, lessonId }: LessonDetailsProps) {
+export function LessonDetails({ courseId, lesson, allLists, allPatterns }: LessonDetailsProps) {
   const router = useRouter();
-
-  const lesson = useCoursesStore((s) => s.lessons.find((l) => l.id === lessonId));
-  const addWordListToLesson = useCoursesStore((s) => s.addWordListToLesson);
-  const removeWordList = useCoursesStore((s) => s.removeWordListFromLesson);
-  const addPatternToLesson = useCoursesStore((s) => s.addPatternListToLesson);
-  const removePattern = useCoursesStore((s) => s.removePatternListFromLesson);
-
-  const allLists = useAppStore((s) => s.lists);
-  const allPatterns = usePatternsStore((s) => s.patterns);
 
   const [showAttachList, setShowAttachList] = useState(false);
   const [selectedList, setSelectedList] = useState("");
   const [showAttachPattern, setShowAttachPattern] = useState(false);
   const [selectedPattern, setSelectedPattern] = useState("");
 
-  if (!lesson) {
-    return (
-      <Stack spacing={2}>
-        <Button
-          variant="text"
-          onClick={() => router.push(`/courses/${courseId}`)}
-          size="small"
-          sx={{ alignSelf: "flex-start" }}
-        >
-          ← Course
-        </Button>
-        <Typography color="text.secondary">Lesson not found.</Typography>
-      </Stack>
-    );
-  }
-
-  const { wordListIds, patternListIds } = lesson;
+  const { wordListIds, patternIds } = lesson;
 
   const attachedLists = allLists.filter((l) => wordListIds.includes(l.id));
   const availableLists = allLists.filter((l) => !wordListIds.includes(l.id));
-  const attachedPatterns = allPatterns.filter((p) => patternListIds.includes(p.id));
-  const availablePatterns = allPatterns.filter((p) => !patternListIds.includes(p.id));
+  const attachedPatterns = allPatterns.filter((p) => patternIds.includes(p.id));
+  const availablePatterns = allPatterns.filter((p) => !patternIds.includes(p.id));
 
-  function handleAttachList() {
+  async function handleAttachList() {
     if (!selectedList) return;
-    addWordListToLesson(lessonId, selectedList);
+    await addWordListToLessonAction(lesson.id, selectedList, courseId);
     setSelectedList("");
     setShowAttachList(false);
+    router.refresh();
   }
 
-  function handleAttachPattern() {
+  async function handleRemoveList(listId: string) {
+    await removeWordListFromLessonAction(lesson.id, listId, courseId);
+    router.refresh();
+  }
+
+  async function handleAttachPattern() {
     if (!selectedPattern) return;
-    addPatternToLesson(lessonId, selectedPattern);
+    await addPatternToLessonAction(lesson.id, selectedPattern, courseId);
     setSelectedPattern("");
     setShowAttachPattern(false);
+    router.refresh();
   }
 
-  const lessonParams = `lessonId=${lessonId}&courseId=${courseId}`;
+  async function handleRemovePattern(patternId: string) {
+    await removePatternFromLessonAction(lesson.id, patternId, courseId);
+    router.refresh();
+  }
+
+  const lessonParams = `lessonId=${lesson.id}&courseId=${courseId}`;
 
   return (
     <Stack spacing={3}>
@@ -163,23 +158,12 @@ export function LessonDetails({ courseId, lessonId }: LessonDetailsProps) {
                     alignItems="center"
                     sx={{ py: 1 }}
                   >
-                    <Link
-                      href={`/lists/${list.id}`}
-                      style={{ textDecoration: "none", color: "inherit" }}
-                    >
-                      <Typography
-                        variant="body1"
-                        sx={{ "&:hover": { textDecoration: "underline" } }}
-                      >
+                    <Link href={`/lists/${list.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                      <Typography variant="body1" sx={{ "&:hover": { textDecoration: "underline" } }}>
                         {list.name}
                       </Typography>
                     </Link>
-                    <Button
-                      size="small"
-                      color="error"
-                      variant="text"
-                      onClick={() => removeWordList(lessonId, list.id)}
-                    >
+                    <Button size="small" color="error" variant="text" onClick={() => handleRemoveList(list.id)}>
                       Remove
                     </Button>
                   </Stack>
@@ -259,23 +243,12 @@ export function LessonDetails({ courseId, lessonId }: LessonDetailsProps) {
                     alignItems="center"
                     sx={{ py: 1 }}
                   >
-                    <Link
-                      href={`/patterns/${pattern.id}`}
-                      style={{ textDecoration: "none", color: "inherit" }}
-                    >
-                      <Typography
-                        variant="body1"
-                        sx={{ "&:hover": { textDecoration: "underline" } }}
-                      >
+                    <Link href={`/patterns/${pattern.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                      <Typography variant="body1" sx={{ "&:hover": { textDecoration: "underline" } }}>
                         {pattern.name}
                       </Typography>
                     </Link>
-                    <Button
-                      size="small"
-                      color="error"
-                      variant="text"
-                      onClick={() => removePattern(lessonId, pattern.id)}
-                    >
+                    <Button size="small" color="error" variant="text" onClick={() => handleRemovePattern(pattern.id)}>
                       Remove
                     </Button>
                   </Stack>

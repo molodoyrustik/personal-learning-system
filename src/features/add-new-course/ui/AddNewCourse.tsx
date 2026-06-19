@@ -3,20 +3,27 @@
 import { Button, Container, Stack, TextField, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useCoursesStore } from "@/shared/model/courses-store";
+import { createCourseAction } from "@/entities/course/api/course-actions";
 
 export function AddNewCourse() {
   const router = useRouter();
-  const createCourse = useCoursesStore((s) => s.createCourse);
-
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const t = title.trim();
-    if (!t) return;
-    const id = createCourse({ title: t, description: description.trim() || undefined });
-    router.push(`/courses/${id}`);
+    if (!t || loading) return;
+    setLoading(true);
+    try {
+      const { courseId } = await createCourseAction({
+        title: t,
+        description: description.trim() || null,
+      });
+      router.push(`/courses/${courseId}`);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -51,10 +58,10 @@ export function AddNewCourse() {
         <Button
           variant="contained"
           onClick={handleSubmit}
-          disabled={!title.trim()}
+          disabled={!title.trim() || loading}
           sx={{ alignSelf: "flex-start" }}
         >
-          Create course
+          {loading ? "Creating…" : "Create course"}
         </Button>
       </Stack>
     </Container>

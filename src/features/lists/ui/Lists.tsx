@@ -10,11 +10,14 @@ import {
   Typography,
 } from "@mui/material";
 import Link from "next/link";
-import { useAppStoreSelectors } from "@/shared/model/app-store";
+import type { List } from "@/entities/list";
 
-export function Lists() {
-  const { lists, words } = useAppStoreSelectors();
+type ListsProps = {
+  lists: List[];
+  wordCountMap: Record<string, number>;
+};
 
+export function Lists({ lists, wordCountMap }: ListsProps) {
   return (
     <Container sx={{ py: 4 }}>
       <Stack spacing={3}>
@@ -51,7 +54,7 @@ export function Lists() {
                     >
                       <Typography variant="h3">{list.name}</Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {words.filter((w) => w.listId === list.id).length} words
+                        {wordCountMap[list.id] ?? 0} words
                       </Typography>
                     </Stack>
                   </CardContent>

@@ -11,7 +11,12 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import type { SentenceStatus } from "@/entities/pattern";
+import type { Pattern, PatternRun, PatternSentence, SentenceStatus } from "@/entities/pattern";
+import {
+  deletePatternAction,
+  deleteSentenceAction,
+  importSentencesAction,
+} from "@/entities/pattern/api/pattern-actions";
 import {
   ImportSentencesDrawer,
   type ImportedSentence,
@@ -20,11 +25,12 @@ import {
   getFirstPassQueue,
   getFullPracticeQueue,
   getMarkedQueue,
-  usePatternsStore,
 } from "@/shared/model/patterns-store";
 
 type PatternDetailsProps = {
-  patternId: string;
+  pattern: Pattern;
+  sentences: PatternSentence[];
+  runs: PatternRun[];
 };
 
 const STATUS_LABELS: Record<SentenceStatus, string> = {
@@ -33,10 +39,7 @@ const STATUS_LABELS: Record<SentenceStatus, string> = {
   learning: "Learning",
 };
 
-const STATUS_COLORS: Record<
-  SentenceStatus,
-  "default" | "primary" | "warning" | "success"
-> = {
+const STATUS_COLORS: Record<SentenceStatus, "default" | "primary" | "warning" | "success"> = {
   new: "default",
   marked: "warning",
   learning: "success",
@@ -49,71 +52,29 @@ function formatDuration(sec: number): string {
   return s > 0 ? `${m} min ${s}s` : `${m} min`;
 }
 
-export function PatternDetails({ patternId }: PatternDetailsProps) {
-  const patterns = usePatternsStore((s) => s.patterns);
-  const allSentences = usePatternsStore((s) => s.patternSentences);
-  const patternRuns = usePatternsStore((s) => s.patternRuns);
-  const addSentencesBulk = usePatternsStore((s) => s.addSentencesBulk);
-  const deleteSentence = usePatternsStore((s) => s.deleteSentence);
-  const deletePattern = usePatternsStore((s) => s.deletePattern);
-
+export function PatternDetails({ pattern, sentences, runs }: PatternDetailsProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-
-  const pattern = useMemo(
-    () => patterns.find((p) => p.id === patternId),
-    [patterns, patternId],
-  );
-  const sentences = useMemo(
-    () => allSentences.filter((s) => s.patternId === patternId),
-    [allSentences, patternId],
-  );
-  const runs = useMemo(
-    () =>
-      patternRuns
-        .filter((r) => r.patternId === patternId)
-        .sort(
-          (a, b) =>
-            new Date(a.completedAt).getTime() -
-            new Date(b.completedAt).getTime(),
-        ),
-    [patternRuns, patternId],
-  );
+  const patternId = pattern.id;
 
   const firstPassCount = useMemo(
-    () => getFirstPassQueue(allSentences, patternId).length,
-    [allSentences, patternId],
+    () => getFirstPassQueue(sentences, patternId).length,
+    [sentences, patternId],
   );
   const markedCount = useMemo(
-    () => getMarkedQueue(allSentences, patternId).length,
-    [allSentences, patternId],
+    () => getMarkedQueue(sentences, patternId).length,
+    [sentences, patternId],
   );
   const fullPracticeCount = useMemo(
-    () => getFullPracticeQueue(allSentences, patternId).length,
-    [allSentences, patternId],
+    () => getFullPracticeQueue(sentences, patternId).length,
+    [sentences, patternId],
   );
 
-  function handleImport(imported: ImportedSentence[]) {
-    addSentencesBulk({
+  async function handleImport(imported: ImportedSentence[]) {
+    await importSentencesAction(
       patternId,
-      sentences: imported.map(({ sourceText, targetText }) => ({
-        sourceText,
-        targetText,
-      })),
-    });
-    setDrawerOpen(false);
-  }
-
-  if (!pattern) {
-    return (
-      <Stack spacing={2}>
-        <Typography variant="body1" color="text.secondary">
-          Pattern not found.
-        </Typography>
-        <Link href="/patterns" style={{ textDecoration: "none" }}>
-          <Button variant="outlined">Back to Patterns</Button>
-        </Link>
-      </Stack>
+      imported.map(({ sourceText, targetText }) => ({ sourceText, targetText })),
     );
+    setDrawerOpen(false);
   }
 
   const modes = [
@@ -139,7 +100,6 @@ export function PatternDetails({ patternId }: PatternDetailsProps) {
 
   return (
     <>
-      {/* Header */}
       <Stack spacing={0.5}>
         <Link href="/patterns" style={{ textDecoration: "none" }}>
           <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }}>
@@ -153,39 +113,32 @@ export function PatternDetails({ patternId }: PatternDetailsProps) {
           </Typography>
         )}
         <Typography variant="body2" color="text.secondary">
-          {sentences.length}{" "}
-          {sentences.length === 1 ? "sentence" : "sentences"} total
+          {sentences.length} {sentences.length === 1 ? "sentence" : "sentences"} total
         </Typography>
       </Stack>
 
-      {/* Status summary */}
       <Card>
         <CardContent>
           <Stack spacing={1.5}>
             <Typography variant="h3">Summary</Typography>
             <Stack direction="row" flexWrap="wrap" gap={1}>
-              {(["new", "marked", "learning"] as SentenceStatus[]).map(
-                (status) => {
-                  const count = sentences.filter(
-                    (s) => s.status === status,
-                  ).length;
-                  return (
-                    <Chip
-                      key={status}
-                      label={`${STATUS_LABELS[status]}: ${count}`}
-                      size="small"
-                      variant={count > 0 ? "filled" : "outlined"}
-                      color={count > 0 ? STATUS_COLORS[status] : "default"}
-                    />
-                  );
-                },
-              )}
+              {(["new", "marked", "learning"] as SentenceStatus[]).map((status) => {
+                const count = sentences.filter((s) => s.status === status).length;
+                return (
+                  <Chip
+                    key={status}
+                    label={`${STATUS_LABELS[status]}: ${count}`}
+                    size="small"
+                    variant={count > 0 ? "filled" : "outlined"}
+                    color={count > 0 ? STATUS_COLORS[status] : "default"}
+                  />
+                );
+              })}
             </Stack>
           </Stack>
         </CardContent>
       </Card>
 
-      {/* Modes */}
       <Card>
         <CardContent>
           <Stack spacing={2}>
@@ -207,11 +160,7 @@ export function PatternDetails({ patternId }: PatternDetailsProps) {
                   >
                     <Stack alignItems="flex-start" spacing={0}>
                       <span>{label}</span>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        component="span"
-                      >
+                      <Typography variant="caption" color="text.secondary" component="span">
                         {description}
                       </Typography>
                     </Stack>
@@ -229,7 +178,6 @@ export function PatternDetails({ patternId }: PatternDetailsProps) {
         </CardContent>
       </Card>
 
-      {/* Full Practice run history */}
       {runs.length > 0 && (
         <Card>
           <CardContent>
@@ -258,25 +206,15 @@ export function PatternDetails({ patternId }: PatternDetailsProps) {
         </Card>
       )}
 
-      {/* Sentences list */}
       <Card>
         <CardContent>
           <Stack spacing={1.5}>
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-            >
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Typography variant="h3">Sentences</Typography>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => setDrawerOpen(true)}
-              >
+              <Button variant="outlined" size="small" onClick={() => setDrawerOpen(true)}>
                 + Import
               </Button>
             </Stack>
-
             {sentences.length === 0 ? (
               <Typography variant="body1" color="text.secondary">
                 No sentences yet.
@@ -303,12 +241,7 @@ export function PatternDetails({ patternId }: PatternDetailsProps) {
                         </Typography>
                       )}
                     </Stack>
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      alignItems="center"
-                      flexShrink={0}
-                    >
+                    <Stack direction="row" spacing={1} alignItems="center" flexShrink={0}>
                       <Chip
                         label={STATUS_LABELS[s.status]}
                         size="small"
@@ -318,7 +251,7 @@ export function PatternDetails({ patternId }: PatternDetailsProps) {
                       <Button
                         size="small"
                         color="error"
-                        onClick={() => deleteSentence(s.id)}
+                        onClick={() => deleteSentenceAction(s.id, patternId)}
                       >
                         ✕
                       </Button>
@@ -331,7 +264,6 @@ export function PatternDetails({ patternId }: PatternDetailsProps) {
         </CardContent>
       </Card>
 
-      {/* Danger zone */}
       <Card variant="outlined">
         <CardContent>
           <Stack spacing={1.5}>
@@ -339,9 +271,7 @@ export function PatternDetails({ patternId }: PatternDetailsProps) {
             <Button
               variant="outlined"
               color="error"
-              component={Link}
-              href="/patterns"
-              onClick={() => deletePattern(patternId)}
+              onClick={() => deletePatternAction(patternId)}
             >
               Delete pattern
             </Button>
