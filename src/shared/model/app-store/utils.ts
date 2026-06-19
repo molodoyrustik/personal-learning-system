@@ -67,7 +67,7 @@ export function makeList(params: {
 //   null → Pass 1 (encoding queue) → 10s
 //   1    → Pass 2 (skipped retry)  → 15s
 //   2    → Pass 3 (skipped retry)  → 25s
-//   3    → Dictionary queue        → no timer (null)
+//   3    → Slow Encode queue       → no timer (null)
 export function getEncodingTimeLimit(word: Word): number | null {
   // Persisted words may have undefined before this field existed — treat like null
   const r = word.encodingAttemptRound;
@@ -78,7 +78,7 @@ export function getEncodingTimeLimit(word: Word): number | null {
   return 10;
 }
 
-/** UI pass label (1–3) for the timed flow; dictionary uses Pass 4 without timer in copy only */
+/** UI pass label (1–3) for the timed flow; Slow Encode uses Pass 4 without timer in copy only */
 export function getTimedPassNumber(word: Word): 1 | 2 | 3 | null {
   if (word.status === "selected") return 1;
   if (word.status === "skipped" && word.encodingAttemptRound === 1) return 2;

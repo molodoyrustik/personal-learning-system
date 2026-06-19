@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Box,
   Button,
   Card,
   CardContent,
@@ -58,7 +59,7 @@ export function ListDetails({ list, words, reviewCount }: ListDetailsProps) {
   const selectionQueue = useMemo(() => words.filter((w) => w.status === "new"), [words]);
   const encodingQueue = useMemo(() => words.filter(isInEncodingQueue), [words]);
   const skippedQueue = useMemo(() => words.filter(isInSkippedQueue), [words]);
-  const dictionaryQueue = useMemo(() => words.filter(isInSlowEncodeQueue), [words]);
+  const slowEncodeQueue = useMemo(() => words.filter(isInSlowEncodeQueue), [words]);
   const recallQueue = useMemo(
     () => words.filter((w) => w.status === "encoded" || w.status === "learning" || w.status === "weak"),
     [words],
@@ -81,14 +82,14 @@ export function ListDetails({ list, words, reviewCount }: ListDetailsProps) {
     { label: "Memorized", count: words.filter((w) => w.status === "memorized").length },
     { label: "Reviewing", count: words.filter((w) => w.status === "reviewing").length },
     { label: "Known", count: words.filter((w) => w.status === "known").length },
-    { label: "Slow Encode", count: dictionaryQueue.length },
+    { label: "Slow Encode", count: slowEncodeQueue.length },
   ];
 
   const modes = [
     { label: "Selection Mode", href: "selection", count: selectionQueue.length, active: selectionQueue.length > 0, detail: null },
     { label: "Encoding Mode", href: "encoding", count: encodingQueue.length, active: encodingQueue.length > 0, detail: null },
     { label: "Skipped Mode", href: "skipped", count: skippedQueue.length, active: skippedQueue.length > 0, detail: null },
-    { label: "Slow Encode", href: "slow-encode", count: dictionaryQueue.length, active: dictionaryQueue.length > 0, detail: null },
+    { label: "Slow Encode", href: "slow-encode", count: slowEncodeQueue.length, active: slowEncodeQueue.length > 0, detail: null },
     {
       label: "Recall Mode",
       href: "recall",
@@ -166,14 +167,14 @@ export function ListDetails({ list, words, reviewCount }: ListDetailsProps) {
                     disabled={!active}
                     sx={{ justifyContent: "space-between", alignItems: "center" }}
                   >
-                    <Stack alignItems="flex-start" spacing={0}>
+                    <Box component="span" sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                       <span>{label}</span>
                       {detail && (
-                        <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
+                        <Typography component="span" variant="caption" color="text.secondary" sx={{ lineHeight: 1.2, display: "block" }}>
                           {detail}
                         </Typography>
                       )}
-                    </Stack>
+                    </Box>
                     <Chip
                       label={count}
                       size="small"

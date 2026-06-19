@@ -24,7 +24,7 @@ const NAV_LINKS = [
   { href: "/characteristics", label: "Characteristics" },
 ];
 
-export function AppTopNav() {
+export function AppTopNav({ isAuthenticated }: { isAuthenticated: boolean }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
@@ -45,26 +45,30 @@ export function AppTopNav() {
         </Typography>
 
         {/* Desktop nav */}
-        <Box sx={{ flex: 1, display: { xs: "none", sm: "flex" }, gap: 0.5, alignItems: "center" }}>
-          {NAV_LINKS.map(({ href, label }) => (
-            <Button key={href} component={Link} href={href} color="inherit">
-              {label}
-            </Button>
-          ))}
-          <Box sx={{ flex: 1 }} />
-          <form action={signOut}>
-            <Button type="submit" color="inherit" size="small">
-              Logout
-            </Button>
-          </form>
-        </Box>
+        {isAuthenticated && (
+          <Box sx={{ flex: 1, display: { xs: "none", sm: "flex" }, gap: 0.5, alignItems: "center" }}>
+            {NAV_LINKS.map(({ href, label }) => (
+              <Button key={href} component={Link} href={href} color="inherit">
+                {label}
+              </Button>
+            ))}
+            <Box sx={{ flex: 1 }} />
+            <form action={signOut}>
+              <Button type="submit" color="inherit" size="small">
+                Logout
+              </Button>
+            </form>
+          </Box>
+        )}
 
         {/* Mobile hamburger */}
-        <Box sx={{ flex: 1, display: { xs: "flex", sm: "none" }, justifyContent: "flex-end" }}>
-          <IconButton onClick={() => setDrawerOpen(true)} color="inherit" aria-label="Menu">
-            ☰
-          </IconButton>
-        </Box>
+        {isAuthenticated && (
+          <Box sx={{ flex: 1, display: { xs: "flex", sm: "none" }, justifyContent: "flex-end" }}>
+            <IconButton onClick={() => setDrawerOpen(true)} color="inherit" aria-label="Menu">
+              ☰
+            </IconButton>
+          </Box>
+        )}
       </Toolbar>
 
       <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>

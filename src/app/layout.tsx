@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { createClient } from "@/shared/lib/supabase/server";
+import { AppTopNav } from "@/shared/ui/AppTopNav";
 import { Providers } from "./providers";
 
 import "./globals.css";
@@ -20,15 +22,19 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   return (
     <html lang="en">
       <body className={inter.className}>
         <Providers>
+          <AppTopNav isAuthenticated={!!user} />
           {children}
         </Providers>
       </body>
