@@ -1,11 +1,12 @@
 import { Box, Button, Stack, TextField, Typography } from "@mui/material";
+import Link from "next/link";
 import { signIn } from "./actions";
 
 type Props = {
   searchParams: Promise<{ error?: string }>;
 };
 
-export default async function LoginPage({ searchParams }: Props) {
+export default async function SignInPage({ searchParams }: Props) {
   const { error } = await searchParams;
 
   return (
@@ -46,6 +47,13 @@ export default async function LoginPage({ searchParams }: Props) {
             </Button>
           </Stack>
         </form>
+
+        <Typography variant="body2" color="text.secondary" textAlign="center">
+          Don't have an account?{" "}
+          <Link href="/sign-up" style={{ color: "inherit" }}>
+            Sign up
+          </Link>
+        </Typography>
       </Stack>
     </Box>
   );

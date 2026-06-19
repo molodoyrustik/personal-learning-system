@@ -12,7 +12,7 @@ export async function signIn(formData: FormData) {
   });
 
   if (error) {
-    redirect("/login?error=Invalid+credentials");
+    redirect("/sign-in?error=Invalid+credentials");
   }
 
   redirect("/lists");
@@ -21,5 +21,5 @@ export async function signIn(formData: FormData) {
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  redirect("/login");
+  redirect("/sign-in");
 }
