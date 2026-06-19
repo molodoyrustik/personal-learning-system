@@ -191,8 +191,8 @@ export function createAppStore() {
         // Skip advances encodingAttemptRound:
         //   null → 1 (will appear in timed pass 2: 15s)
         //   1    → 2 (will appear in timed pass 3: 25s)
-        //   2    → 3 (will appear in dictionary queue, no timer)
-        //   3    → 3 (stays in dictionary queue)
+        //   2    → 3 (will appear in Slow Encode queue, no timer)
+        //   3    → 3 (stays in Slow Encode queue)
         skipWord: (wordId) => {
           set((s) => {
             const word = s.words.find((w) => w.id === wordId);
@@ -219,7 +219,7 @@ export function createAppStore() {
 
             if (remembered) {
               const recallSuccessCount = word.recallSuccessCount + 1;
-              const status = recallSuccessCount >= 3 ? "mastered" : "learning";
+              const status = recallSuccessCount >= 3 ? "memorized" : "learning";
               return {
                 words: patchWord(s.words, wordId, {
                   recallSuccessCount,
@@ -264,7 +264,7 @@ export function isInSkippedQueue(word: Word): boolean {
   return word.status === "skipped" && word.encodingAttemptRound !== 3;
 }
 
-// Dictionary queue: words skipped through all 3 passes — no timer
-export function isInDictionaryQueue(word: Word): boolean {
+// Slow Encode queue: words skipped through all 3 passes — no timer
+export function isInSlowEncodeQueue(word: Word): boolean {
   return word.status === "skipped" && word.encodingAttemptRound === 3;
 }

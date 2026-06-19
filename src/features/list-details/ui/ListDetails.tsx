@@ -14,7 +14,7 @@ import { useMemo } from "react";
 import type { List } from "@/entities/list";
 import type { Word, WordStatus } from "@/entities/word/model/types";
 import {
-  isInDictionaryQueue,
+  isInSlowEncodeQueue,
   isInEncodingQueue,
   isInSkippedQueue,
 } from "@/shared/model/app-store";
@@ -22,6 +22,7 @@ import {
 type ListDetailsProps = {
   list: List;
   words: Word[];
+  reviewCount: number;
 };
 
 const STATUS_LABELS: Record<WordStatus, string> = {
@@ -32,7 +33,9 @@ const STATUS_LABELS: Record<WordStatus, string> = {
   encoded: "Encoded",
   learning: "Learning",
   weak: "Weak",
-  mastered: "Mastered",
+  memorized: "Memorized",
+  reviewing: "Reviewing",
+  known: "Known",
 };
 
 const STATUS_COLORS: Record<
@@ -46,18 +49,27 @@ const STATUS_COLORS: Record<
   encoded: "info",
   learning: "secondary",
   weak: "warning",
-  mastered: "success",
+  memorized: "success",
+  reviewing: "success",
+  known: "success",
 };
 
-export function ListDetails({ list, words }: ListDetailsProps) {
+export function ListDetails({ list, words, reviewCount }: ListDetailsProps) {
   const selectionQueue = useMemo(() => words.filter((w) => w.status === "new"), [words]);
   const encodingQueue = useMemo(() => words.filter(isInEncodingQueue), [words]);
   const skippedQueue = useMemo(() => words.filter(isInSkippedQueue), [words]);
-  const dictionaryQueue = useMemo(() => words.filter(isInDictionaryQueue), [words]);
+  const dictionaryQueue = useMemo(() => words.filter(isInSlowEncodeQueue), [words]);
   const recallQueue = useMemo(
     () => words.filter((w) => w.status === "encoded" || w.status === "learning" || w.status === "weak"),
     [words],
   );
+
+  const recallRounds = useMemo(() => {
+    const r1 = recallQueue.filter((w) => w.recallSuccessCount === 0).length;
+    const r2 = recallQueue.filter((w) => w.recallSuccessCount === 1).length;
+    const r3 = recallQueue.filter((w) => w.recallSuccessCount === 2).length;
+    return [r1, r2, r3];
+  }, [recallQueue]);
 
   const statusGroups = [
     { label: "New", count: words.filter((w) => w.status === "new").length },
@@ -66,26 +78,42 @@ export function ListDetails({ list, words }: ListDetailsProps) {
     { label: "Skipped", count: words.filter((w) => w.status === "skipped").length },
     { label: "Learning", count: words.filter((w) => w.status === "learning").length },
     { label: "Weak", count: words.filter((w) => w.status === "weak").length },
-    { label: "Mastered", count: words.filter((w) => w.status === "mastered").length },
-    { label: "Dictionary", count: dictionaryQueue.length },
+    { label: "Memorized", count: words.filter((w) => w.status === "memorized").length },
+    { label: "Reviewing", count: words.filter((w) => w.status === "reviewing").length },
+    { label: "Known", count: words.filter((w) => w.status === "known").length },
+    { label: "Slow Encode", count: dictionaryQueue.length },
   ];
 
   const modes = [
-    { label: "Selection Mode", href: "selection", count: selectionQueue.length, active: selectionQueue.length > 0 },
-    { label: "Encoding Mode", href: "encoding", count: encodingQueue.length, active: encodingQueue.length > 0 },
-    { label: "Skipped Mode", href: "skipped", count: skippedQueue.length, active: skippedQueue.length > 0 },
-    { label: "Dictionary Queue", href: "dictionary", count: dictionaryQueue.length, active: dictionaryQueue.length > 0 },
-    { label: "Recall Mode", href: "recall", count: recallQueue.length, active: recallQueue.length > 0 },
-  ] as const;
+    { label: "Selection Mode", href: "selection", count: selectionQueue.length, active: selectionQueue.length > 0, detail: null },
+    { label: "Encoding Mode", href: "encoding", count: encodingQueue.length, active: encodingQueue.length > 0, detail: null },
+    { label: "Skipped Mode", href: "skipped", count: skippedQueue.length, active: skippedQueue.length > 0, detail: null },
+    { label: "Slow Encode", href: "slow-encode", count: dictionaryQueue.length, active: dictionaryQueue.length > 0, detail: null },
+    {
+      label: "Recall Mode",
+      href: "recall",
+      count: recallQueue.length,
+      active: recallQueue.length > 0,
+      detail: recallQueue.length > 0
+        ? recallRounds.map((n, i) => `Round ${i + 1}: ${n}`).filter((_, i) => recallRounds[i] > 0).join(" · ") || null
+        : null,
+    },
+    { label: "Review", href: "review", count: reviewCount, active: reviewCount > 0, detail: null },
+  ];
 
   return (
     <>
       <Stack spacing={0.5}>
-        <Link href="/lists" style={{ textDecoration: "none" }}>
-          <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }}>
-            ← Back to Lists
-          </Button>
-        </Link>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Link href="/lists" style={{ textDecoration: "none" }}>
+            <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }}>
+              ← Back to Lists
+            </Button>
+          </Link>
+          <Link href={`/lists/${list.id}/edit`} style={{ textDecoration: "none" }}>
+            <Button variant="outlined" size="small">+ Add words</Button>
+          </Link>
+        </Stack>
         <Typography variant="h1">{list.name}</Typography>
         <Typography variant="body2" color="text.secondary">
           {list.sourceLanguage} → {list.targetLanguage}
@@ -124,7 +152,7 @@ export function ListDetails({ list, words }: ListDetailsProps) {
           <Stack spacing={2}>
             <Typography variant="h3">Modes</Typography>
             <Stack spacing={1.5}>
-              {modes.map(({ label, href, count, active }) => (
+              {modes.map(({ label, href, count, active, detail }) => (
                 <Link
                   key={href}
                   href={`/lists/${list.id}/${href}`}
@@ -136,9 +164,16 @@ export function ListDetails({ list, words }: ListDetailsProps) {
                     variant="outlined"
                     fullWidth
                     disabled={!active}
-                    sx={{ justifyContent: "space-between" }}
+                    sx={{ justifyContent: "space-between", alignItems: "center" }}
                   >
-                    <span>{label}</span>
+                    <Stack alignItems="flex-start" spacing={0}>
+                      <span>{label}</span>
+                      {detail && (
+                        <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
+                          {detail}
+                        </Typography>
+                      )}
+                    </Stack>
                     <Chip
                       label={count}
                       size="small"

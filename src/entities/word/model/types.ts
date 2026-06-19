@@ -6,7 +6,9 @@ export type WordStatus =
   | "encoded"
   | "learning"
   | "weak"
-  | "mastered";
+  | "memorized"
+  | "reviewing"
+  | "known";
 
 export type SelectionDecision =
   | "unknown_and_needed"

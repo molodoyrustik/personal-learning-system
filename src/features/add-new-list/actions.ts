@@ -60,3 +60,39 @@ export async function createListWithWords(params: {
   revalidatePath("/lists");
   return { listId };
 }
+
+export async function addWordsToListAction(
+  listId: string,
+  words: { sourceText: string; targetText: string }[],
+): Promise<void> {
+  if (words.length === 0) return;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const now = nowISO();
+  await supabase.from("words").insert(
+    words.map(({ sourceText, targetText }) => ({
+      id: generateId(),
+      user_id: user.id,
+      list_id: listId,
+      source_text: sourceText,
+      target_text: targetText,
+      status: "new",
+      selection_decision: null,
+      can_visualize_meaning: null,
+      sound_association: null,
+      scene_description: null,
+      skip_count: 0,
+      encoding_attempt_count: 0,
+      encoding_attempt_round: null,
+      recall_success_count: 0,
+      recall_fail_count: 0,
+      last_recalled_at: null,
+      next_review_at: null,
+      created_at: now,
+      updated_at: now,
+    })),
+  );
+  revalidatePath(`/lists/${listId}`);
+}

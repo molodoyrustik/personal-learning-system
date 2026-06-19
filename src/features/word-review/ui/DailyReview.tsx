@@ -10,29 +10,29 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { Word } from "@/entities/word/model/types";
-import { markRecallResultAction } from "@/entities/word/api/word-actions";
+import { markReviewResultAction } from "@/entities/word/api/word-actions";
 
-type RecallModeProps = {
-  listId: string;
-  initialWords: Word[];
+type ReviewWord = {
+  id: string;
+  source_text: string;
+  target_text: string;
+  sound_association: string | null;
+  scene_description: string | null;
+  next_review_at: string | null;
 };
 
-const RECALL_STATUSES = ["encoded", "learning", "weak"] as const;
+type DailyReviewProps = {
+  listId: string;
+  initialWords: ReviewWord[];
+};
 
-export function RecallMode({ listId, initialWords }: RecallModeProps) {
-  const [queue, setQueue] = useState<Word[]>(() =>
-    initialWords.filter((w) =>
-      (RECALL_STATUSES as readonly string[]).includes(w.status),
-    ),
-  );
+export function DailyReview({ listId, initialWords }: DailyReviewProps) {
+  const router = useRouter();
+  const [queue, setQueue] = useState<ReviewWord[]>(initialWords);
   const [isAnswerVisible, setIsAnswerVisible] = useState(false);
   const [doneCount, setDoneCount] = useState(0);
 
-  const router = useRouter();
-  function goBack() { router.refresh(); router.push(`/lists/${listId}`); }
-
-  const total = queue.length;
+  const total = initialWords.length;
   const current = queue[0] ?? null;
 
   function moveToNext() {
@@ -43,13 +43,13 @@ export function RecallMode({ listId, initialWords }: RecallModeProps) {
 
   async function handleRemembered() {
     if (!current) return;
-    await markRecallResultAction(current.id, true);
+    await markReviewResultAction(current.id, true);
     moveToNext();
   }
 
   async function handleForgot() {
     if (!current) return;
-    await markRecallResultAction(current.id, false);
+    await markReviewResultAction(current.id, false);
     moveToNext();
   }
 
@@ -57,12 +57,14 @@ export function RecallMode({ listId, initialWords }: RecallModeProps) {
     return (
       <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
         <Stack spacing={1} alignItems="center">
-          <Typography variant="h2">Nothing to recall</Typography>
+          <Typography variant="h2">No words to review</Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center">
-            There are no words ready for review in this list.
+            All caught up! Come back later when words are due.
           </Typography>
         </Stack>
-        <Button variant="outlined" onClick={goBack}>Back to list</Button>
+        <Button variant="outlined" onClick={() => { router.refresh(); router.push(`/lists/${listId}`); }}>
+          Back to list
+        </Button>
       </Stack>
     );
   }
@@ -71,12 +73,14 @@ export function RecallMode({ listId, initialWords }: RecallModeProps) {
     return (
       <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
         <Stack spacing={1} alignItems="center">
-          <Typography variant="h2">Recall complete</Typography>
+          <Typography variant="h2">Review complete</Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center">
-            All review words have been processed.
+            You reviewed {doneCount} {doneCount === 1 ? "word" : "words"} today.
           </Typography>
         </Stack>
-        <Button variant="outlined" onClick={goBack}>Back to list</Button>
+        <Button variant="outlined" onClick={() => { router.refresh(); router.push(`/lists/${listId}`); }}>
+          Back to list
+        </Button>
       </Stack>
     );
   }
@@ -84,9 +88,7 @@ export function RecallMode({ listId, initialWords }: RecallModeProps) {
   return (
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} onClick={goBack}>
-          ← Back
-        </Button>
+        <Typography variant="h1">Daily Review</Typography>
         <Typography variant="caption" color="text.secondary">
           {doneCount + 1} / {total}
         </Typography>
@@ -97,36 +99,36 @@ export function RecallMode({ listId, initialWords }: RecallModeProps) {
           <Stack spacing={2.5}>
             <Stack spacing={0.5} alignItems="center">
               <Typography variant="h1" textAlign="center">
-                {current.sourceText}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Round {current.recallSuccessCount + 1} / 3
+                {current.source_text}
               </Typography>
             </Stack>
-            {current.sceneDescription && (
+
+            {current.scene_description && (
               <>
                 <Divider />
                 <Stack spacing={0.5}>
                   <Typography variant="caption" color="text.secondary">Сцена</Typography>
-                  <Typography variant="body1">{current.sceneDescription}</Typography>
+                  <Typography variant="body1">{current.scene_description}</Typography>
                 </Stack>
               </>
             )}
-            {current.soundAssociation && (
+            {current.sound_association && (
               <Stack spacing={0.5}>
                 <Typography variant="caption" color="text.secondary">Ассоциация</Typography>
-                <Typography variant="body1">{current.soundAssociation}</Typography>
+                <Typography variant="body1">{current.sound_association}</Typography>
               </Stack>
             )}
+
             <Typography variant="body2" color="text.secondary" textAlign="center">
               Какое это слово?
             </Typography>
+
             {isAnswerVisible && (
               <>
                 <Divider />
                 <Stack alignItems="center" sx={{ py: 1 }}>
                   <Typography variant="h2" color="primary">
-                    {current.targetText}
+                    {current.target_text}
                   </Typography>
                 </Stack>
               </>
@@ -145,7 +147,7 @@ export function RecallMode({ listId, initialWords }: RecallModeProps) {
             Remembered
           </Button>
           <Button variant="outlined" fullWidth onClick={handleForgot}>
-            Didn't remember
+            Forgot
           </Button>
         </Stack>
       )}

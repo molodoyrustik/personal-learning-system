@@ -3,7 +3,7 @@ import type { Word } from "@/entities/word";
 import { useAppStore } from "./AppStoreProvider";
 import type { AppStore } from "./app-store";
 import {
-  isInDictionaryQueue,
+  isInSlowEncodeQueue,
   isInEncodingQueue,
   isInSkippedQueue,
 } from "./app-store";
@@ -37,7 +37,7 @@ export function selectEncodingQueueWords(
   return words.filter((w) => w.listId === listId && isInEncodingQueue(w));
 }
 
-/** Skipped Mode: Pass 2 + Pass 3 timed queues only (not dictionary) */
+/** Skipped Mode: Pass 2 + Pass 3 timed queues only (not Slow Encode) */
 export function selectSkippedTimedQueueWords(
   words: Word[],
   listId: string,
@@ -45,9 +45,9 @@ export function selectSkippedTimedQueueWords(
   return words.filter((w) => w.listId === listId && isInSkippedQueue(w));
 }
 
-export function selectDictionaryQueueWords(
+export function selectSlowEncodeQueueWords(
   words: Word[],
   listId: string,
 ): Word[] {
-  return words.filter((w) => w.listId === listId && isInDictionaryQueue(w));
+  return words.filter((w) => w.listId === listId && isInSlowEncodeQueue(w));
 }

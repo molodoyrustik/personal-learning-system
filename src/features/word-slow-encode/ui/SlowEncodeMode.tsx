@@ -9,7 +9,7 @@ import {
   setMeaningVisualizationAction,
   skipWordAction,
 } from "@/entities/word/api/word-actions";
-import { isInDictionaryQueue } from "@/shared/model/app-store";
+import { isInSlowEncodeQueue } from "@/shared/model/app-store";
 import {
   StepFixation,
   StepImageCheck,
@@ -17,7 +17,7 @@ import {
   StepSoundEncoding,
 } from "@/features/word-encoding/ui/encoding-steps";
 
-type DictionaryModeProps = {
+type SlowEncodeModeProps = {
   listId: string;
   initialWords: Word[];
 };
@@ -29,11 +29,11 @@ function CompletionState({ empty, onBack }: { empty?: boolean; onBack: () => voi
     <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
       <Stack spacing={1} alignItems="center">
         <Typography variant="h2">
-          {empty ? "Dictionary queue is empty" : "Dictionary queue complete"}
+          {empty ? "Slow Encode queue is empty" : "Slow Encode complete"}
         </Typography>
         <Typography variant="body1" color="text.secondary" textAlign="center">
           {empty
-            ? "No words have reached the dictionary queue yet."
+            ? "No words have reached Slow Encode yet."
             : "All difficult words have been processed."}
         </Typography>
       </Stack>
@@ -42,9 +42,9 @@ function CompletionState({ empty, onBack }: { empty?: boolean; onBack: () => voi
   );
 }
 
-export function DictionaryMode({ listId, initialWords }: DictionaryModeProps) {
+export function SlowEncodeMode({ listId, initialWords }: SlowEncodeModeProps) {
   const [queue, setQueue] = useState<Word[]>(() =>
-    initialWords.filter((w) => isInDictionaryQueue(w)),
+    initialWords.filter((w) => isInSlowEncodeQueue(w)),
   );
   const [step, setStep] = useState<Step>(1);
   const [soundAssociation, setSoundAssociation] = useState("");
