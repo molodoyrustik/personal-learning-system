@@ -28,20 +28,46 @@ type SkippedModeProps = {
 
 type Step = 1 | 2 | 3 | 4;
 
-function CompletionState({ empty, onBack }: { empty?: boolean; onBack: () => void }) {
+type Outcomes = { encoded: number; skippedAgain: number; sentToSlowEncode: number };
+
+function CompletionState({ empty, outcomes, onBack, onGoToAgain, onGoToSlowEncode, onGoToRecall }: {
+  empty?: boolean;
+  outcomes: Outcomes;
+  onBack: () => void;
+  onGoToAgain: () => void;
+  onGoToSlowEncode: () => void;
+  onGoToRecall: () => void;
+}) {
+  const { encoded, skippedAgain, sentToSlowEncode } = outcomes;
   return (
     <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
       <Stack spacing={1} alignItems="center">
-        <Typography variant="h2">
-          {empty ? "No skipped words" : "Skipped words complete"}
-        </Typography>
-        <Typography variant="body1" color="text.secondary" textAlign="center">
-          {empty
-            ? "There are no skipped words in this list."
-            : "All skipped words have been processed."}
-        </Typography>
+        <Typography variant="h2">{empty ? "No skipped words" : "Pass complete"}</Typography>
+        {!empty && (
+          <Typography variant="body1" color="text.secondary" textAlign="center">
+            {encoded > 0 && `${encoded} encoded`}
+            {encoded > 0 && (skippedAgain > 0 || sentToSlowEncode > 0) && " · "}
+            {skippedAgain > 0 && `${skippedAgain} need another pass`}
+            {skippedAgain > 0 && sentToSlowEncode > 0 && " · "}
+            {sentToSlowEncode > 0 && `${sentToSlowEncode} → Slow Encode`}
+          </Typography>
+        )}
       </Stack>
-      <Button variant="outlined" onClick={onBack}>Back to list</Button>
+      <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 320 }}>
+        {!empty && skippedAgain > 0 && (
+          <Button variant="contained" fullWidth onClick={onGoToAgain}>→ Skipped again</Button>
+        )}
+        {!empty && sentToSlowEncode > 0 && (
+          <Button variant={skippedAgain > 0 ? "outlined" : "contained"} fullWidth onClick={onGoToSlowEncode}>→ Slow Encode</Button>
+        )}
+        {!empty && encoded > 0 && skippedAgain === 0 && sentToSlowEncode === 0 && (
+          <Button variant="contained" fullWidth onClick={onGoToRecall}>→ Recall Mode</Button>
+        )}
+        {empty && (
+          <Button variant="contained" fullWidth onClick={onGoToSlowEncode}>→ Slow Encode</Button>
+        )}
+        <Button variant="outlined" fullWidth onClick={onBack}>Back to list</Button>
+      </Stack>
     </Stack>
   );
 }
@@ -55,12 +81,25 @@ export function SkippedMode({ listId, initialWords }: SkippedModeProps) {
   const [sceneDescription, setSceneDescription] = useState("");
   const [doneCount, setDoneCount] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(15);
+  const [outcomes, setOutcomes] = useState<Outcomes>({ encoded: 0, skippedAgain: 0, sentToSlowEncode: 0 });
 
   const current = queue[0] ?? null;
   const total = queue.length;
 
   const skipRef = useRef(skipWordAction);
   skipRef.current = skipWordAction;
+
+  function trackEncoded() { setOutcomes((o) => ({ ...o, encoded: o.encoded + 1 })); }
+  function trackSkip(word: Word) {
+    // round 2 → 3 means it goes to Slow Encode; round 1 → 2 stays in skipped queue
+    if (word.encodingAttemptRound === 2) {
+      setOutcomes((o) => ({ ...o, sentToSlowEncode: o.sentToSlowEncode + 1 }));
+    } else {
+      setOutcomes((o) => ({ ...o, skippedAgain: o.skippedAgain + 1 }));
+    }
+  }
+  const trackSkipRef = useRef(trackSkip);
+  trackSkipRef.current = trackSkip;
 
   function resetInputs() {
     setSoundAssociation("");
@@ -77,6 +116,9 @@ export function SkippedMode({ listId, initialWords }: SkippedModeProps) {
   const moveToNextRef = useRef(moveToNext);
   moveToNextRef.current = moveToNext;
 
+  const currentRef = useRef(current);
+  currentRef.current = current;
+
   useEffect(() => {
     if (!current) return;
     const sec = getEncodingTimeLimit(current) ?? 15;
@@ -85,7 +127,11 @@ export function SkippedMode({ listId, initialWords }: SkippedModeProps) {
       setSecondsLeft((s) => (s <= 1 ? 0 : s - 1));
     }, 1000);
     const t = setTimeout(() => {
-      skipRef.current(current.id);
+      const w = currentRef.current;
+      if (w) {
+        skipRef.current(w.id);
+        trackSkipRef.current(w);
+      }
       moveToNextRef.current();
     }, sec * 1000);
     return () => {
@@ -103,6 +149,7 @@ export function SkippedMode({ listId, initialWords }: SkippedModeProps) {
   async function handleImageSkip() {
     if (!current) return;
     await skipWordAction(current.id);
+    trackSkip(current);
     moveToNext();
   }
 
@@ -114,6 +161,7 @@ export function SkippedMode({ listId, initialWords }: SkippedModeProps) {
   async function handleSoundSkip() {
     if (!current) return;
     await skipWordAction(current.id);
+    trackSkip(current);
     moveToNext();
   }
 
@@ -125,6 +173,7 @@ export function SkippedMode({ listId, initialWords }: SkippedModeProps) {
   async function handleSceneSkip() {
     if (!current) return;
     await skipWordAction(current.id);
+    trackSkip(current);
     moveToNext();
   }
 
@@ -134,14 +183,18 @@ export function SkippedMode({ listId, initialWords }: SkippedModeProps) {
       soundAssociation: soundAssociation.trim(),
       sceneDescription: sceneDescription.trim(),
     });
+    trackEncoded();
     moveToNext();
   }
 
   const router = useRouter();
   function goBack() { router.refresh(); router.push(`/lists/${listId}`); }
+  function goToAgain() { window.location.href = `/lists/${listId}/skipped`; }
+  function goToSlowEncode() { router.refresh(); router.push(`/lists/${listId}/slow-encode`); }
+  function goToRecall() { router.refresh(); router.push(`/lists/${listId}/recall`); }
 
-  if (total === 0) return <CompletionState empty onBack={goBack} />;
-  if (!current) return <CompletionState onBack={goBack} />;
+  if (total === 0 && doneCount === 0) return <CompletionState empty outcomes={outcomes} onBack={goBack} onGoToAgain={goToAgain} onGoToSlowEncode={goToSlowEncode} onGoToRecall={goToRecall} />;
+  if (!current && doneCount > 0) return <CompletionState outcomes={outcomes} onBack={goBack} onGoToAgain={goToAgain} onGoToSlowEncode={goToSlowEncode} onGoToRecall={goToRecall} />;
 
   const passUi = getTimedPassNumber(current) ?? 2;
   const limitSec = getEncodingTimeLimit(current) ?? 15;

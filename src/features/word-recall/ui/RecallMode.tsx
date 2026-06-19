@@ -28,6 +28,8 @@ export function RecallMode({ listId, initialWords }: RecallModeProps) {
   );
   const [isAnswerVisible, setIsAnswerVisible] = useState(false);
   const [doneCount, setDoneCount] = useState(0);
+  const [memorizedCount, setMemorizedCount] = useState(0);
+  const [stillLearningCount, setStillLearningCount] = useState(0);
 
   const router = useRouter();
   function goBack() { router.refresh(); router.push(`/lists/${listId}`); }
@@ -44,22 +46,28 @@ export function RecallMode({ listId, initialWords }: RecallModeProps) {
   async function handleRemembered() {
     if (!current) return;
     await markRecallResultAction(current.id, true);
+    if (current.recallSuccessCount + 1 >= 3) {
+      setMemorizedCount((n) => n + 1);
+    } else {
+      setStillLearningCount((n) => n + 1);
+    }
     moveToNext();
   }
 
   async function handleForgot() {
     if (!current) return;
     await markRecallResultAction(current.id, false);
+    setStillLearningCount((n) => n + 1);
     moveToNext();
   }
 
-  if (total === 0) {
+  if (total === 0 && doneCount === 0) {
     return (
       <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
         <Stack spacing={1} alignItems="center">
           <Typography variant="h2">Nothing to recall</Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center">
-            There are no words ready for review in this list.
+            There are no words ready for recall in this list.
           </Typography>
         </Stack>
         <Button variant="outlined" onClick={goBack}>Back to list</Button>
@@ -67,16 +75,25 @@ export function RecallMode({ listId, initialWords }: RecallModeProps) {
     );
   }
 
-  if (!current) {
+  if (!current && doneCount > 0) {
     return (
       <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
         <Stack spacing={1} alignItems="center">
-          <Typography variant="h2">Recall complete</Typography>
+          <Typography variant="h2">Pass complete</Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center">
-            All review words have been processed.
+            {memorizedCount > 0 && `${memorizedCount} memorized`}
+            {memorizedCount > 0 && stillLearningCount > 0 && " · "}
+            {stillLearningCount > 0 && `${stillLearningCount} still learning`}
           </Typography>
         </Stack>
-        <Button variant="outlined" onClick={goBack}>Back to list</Button>
+        <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 320 }}>
+          {stillLearningCount > 0 && (
+            <Button variant="contained" fullWidth onClick={() => { window.location.href = `/lists/${listId}/recall`; }}>
+              → Recall again
+            </Button>
+          )}
+          <Button variant="outlined" fullWidth onClick={goBack}>Back to list</Button>
+        </Stack>
       </Stack>
     );
   }

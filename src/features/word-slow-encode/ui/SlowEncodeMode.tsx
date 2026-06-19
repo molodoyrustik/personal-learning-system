@@ -24,7 +24,7 @@ type SlowEncodeModeProps = {
 
 type Step = 1 | 2 | 3 | 4;
 
-function CompletionState({ empty, onBack }: { empty?: boolean; onBack: () => void }) {
+function CompletionState({ empty, onBack, onNext }: { empty?: boolean; onBack: () => void; onNext?: () => void }) {
   return (
     <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
       <Stack spacing={1} alignItems="center">
@@ -37,7 +37,10 @@ function CompletionState({ empty, onBack }: { empty?: boolean; onBack: () => voi
             : "All difficult words have been processed."}
         </Typography>
       </Stack>
-      <Button variant="outlined" onClick={onBack}>Back to list</Button>
+      <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 320 }}>
+        {!empty && onNext && <Button variant="contained" fullWidth onClick={onNext}>→ Recall Mode</Button>}
+        <Button variant="outlined" fullWidth onClick={onBack}>Back to list</Button>
+      </Stack>
     </Stack>
   );
 }
@@ -50,6 +53,7 @@ export function SlowEncodeMode({ listId, initialWords }: SlowEncodeModeProps) {
   const [soundAssociation, setSoundAssociation] = useState("");
   const [sceneDescription, setSceneDescription] = useState("");
   const [doneCount, setDoneCount] = useState(0);
+  const [encodedCount, setEncodedCount] = useState(0);
 
   const current = queue[0] ?? null;
   const total = queue.length;
@@ -106,14 +110,16 @@ export function SlowEncodeMode({ listId, initialWords }: SlowEncodeModeProps) {
       soundAssociation: soundAssociation.trim(),
       sceneDescription: sceneDescription.trim(),
     });
+    setEncodedCount((n) => n + 1);
     moveToNext();
   }
 
   const router = useRouter();
   function goBack() { router.refresh(); router.push(`/lists/${listId}`); }
+  function goToRecall() { router.refresh(); router.push(`/lists/${listId}/recall`); }
 
-  if (total === 0) return <CompletionState empty onBack={goBack} />;
-  if (!current) return <CompletionState onBack={goBack} />;
+  if (total === 0 && doneCount === 0) return <CompletionState empty onBack={goBack} />;
+  if (!current && doneCount > 0) return <CompletionState onBack={goBack} onNext={encodedCount > 0 ? goToRecall : undefined} />;
 
   return (
     <Stack spacing={3}>

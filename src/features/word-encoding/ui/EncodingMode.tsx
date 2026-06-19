@@ -27,7 +27,17 @@ type EncodingModeProps = {
 
 type Step = 1 | 2 | 3 | 4;
 
-function CompletionState({ empty, onBack }: { empty?: boolean; onBack: () => void }) {
+type Outcomes = { encoded: number; skipped: number };
+
+function CompletionState({ empty, outcomes, onBack, onGoToSkipped, onGoToRecall }: {
+  empty?: boolean;
+  outcomes: Outcomes;
+  onBack: () => void;
+  onGoToSkipped: () => void;
+  onGoToRecall: () => void;
+}) {
+  const hasSkipped = outcomes.skipped > 0;
+  const hasEncoded = outcomes.encoded > 0;
   return (
     <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
       <Stack spacing={1} alignItems="center">
@@ -37,10 +47,18 @@ function CompletionState({ empty, onBack }: { empty?: boolean; onBack: () => voi
         <Typography variant="body1" color="text.secondary" textAlign="center">
           {empty
             ? "There are no selected words in this list."
-            : "All selected words have been processed."}
+            : `${outcomes.encoded} encoded · ${outcomes.skipped} skipped`}
         </Typography>
       </Stack>
-      <Button variant="outlined" onClick={onBack}>Back to list</Button>
+      <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 320 }}>
+        {!empty && hasSkipped && (
+          <Button variant="contained" fullWidth onClick={onGoToSkipped}>→ Skipped Mode</Button>
+        )}
+        {!empty && !hasSkipped && hasEncoded && (
+          <Button variant="contained" fullWidth onClick={onGoToRecall}>→ Recall Mode</Button>
+        )}
+        <Button variant="outlined" fullWidth onClick={onBack}>Back to list</Button>
+      </Stack>
     </Stack>
   );
 }
@@ -54,12 +72,18 @@ export function EncodingMode({ listId, initialWords }: EncodingModeProps) {
   const [sceneDescription, setSceneDescription] = useState("");
   const [doneCount, setDoneCount] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(10);
+  const [outcomes, setOutcomes] = useState<Outcomes>({ encoded: 0, skipped: 0 });
 
   const current = queue[0] ?? null;
   const total = queue.length;
 
   const skipRef = useRef(skipWordAction);
   skipRef.current = skipWordAction;
+
+  function trackEncoded() { setOutcomes((o) => ({ ...o, encoded: o.encoded + 1 })); }
+  function trackSkipped() { setOutcomes((o) => ({ ...o, skipped: o.skipped + 1 })); }
+  const trackSkippedRef = useRef(trackSkipped);
+  trackSkippedRef.current = trackSkipped;
 
   function resetInputs() {
     setSoundAssociation("");
@@ -85,6 +109,7 @@ export function EncodingMode({ listId, initialWords }: EncodingModeProps) {
     }, 1000);
     const t = setTimeout(() => {
       skipRef.current(current.id);
+      trackSkippedRef.current();
       moveToNextRef.current();
     }, sec * 1000);
     return () => {
@@ -103,6 +128,7 @@ export function EncodingMode({ listId, initialWords }: EncodingModeProps) {
     if (!current) return;
     await setMeaningVisualizationAction(current.id, false);
     await skipWordAction(current.id);
+    trackSkipped();
     moveToNext();
   }
 
@@ -114,6 +140,7 @@ export function EncodingMode({ listId, initialWords }: EncodingModeProps) {
   async function handleSoundSkip() {
     if (!current) return;
     await skipWordAction(current.id);
+    trackSkipped();
     moveToNext();
   }
 
@@ -125,6 +152,7 @@ export function EncodingMode({ listId, initialWords }: EncodingModeProps) {
   async function handleSceneSkip() {
     if (!current) return;
     await skipWordAction(current.id);
+    trackSkipped();
     moveToNext();
   }
 
@@ -134,14 +162,17 @@ export function EncodingMode({ listId, initialWords }: EncodingModeProps) {
       soundAssociation: soundAssociation.trim(),
       sceneDescription: sceneDescription.trim(),
     });
+    trackEncoded();
     moveToNext();
   }
 
   const router = useRouter();
   function goBack() { router.refresh(); router.push(`/lists/${listId}`); }
+  function goToSkipped() { router.refresh(); router.push(`/lists/${listId}/skipped`); }
+  function goToRecall() { router.refresh(); router.push(`/lists/${listId}/recall`); }
 
-  if (total === 0) return <CompletionState empty onBack={goBack} />;
-  if (!current) return <CompletionState onBack={goBack} />;
+  if (total === 0 && doneCount === 0) return <CompletionState empty outcomes={outcomes} onBack={goBack} onGoToSkipped={goToSkipped} onGoToRecall={goToRecall} />;
+  if (!current && doneCount > 0) return <CompletionState outcomes={outcomes} onBack={goBack} onGoToSkipped={goToSkipped} onGoToRecall={goToRecall} />;
 
   const passUi = getTimedPassNumber(current) ?? 1;
   const limitSec = getEncodingTimeLimit(current) ?? 10;

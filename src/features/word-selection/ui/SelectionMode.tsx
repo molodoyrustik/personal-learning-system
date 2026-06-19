@@ -42,7 +42,9 @@ export function SelectionMode({ listId, initialWords }: SelectionModeProps) {
     setQueue((q) => [...q.slice(1), q[0]]);
   }
 
-  if (total === 0) {
+  const goToEncoding = () => { router.refresh(); router.push(`/lists/${listId}/encoding`); };
+
+  if (total === 0 && processed === 0) {
     return (
       <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
         <Stack spacing={1} alignItems="center">
@@ -56,7 +58,7 @@ export function SelectionMode({ listId, initialWords }: SelectionModeProps) {
     );
   }
 
-  if (isFinished) {
+  if (isFinished && processed > 0) {
     return (
       <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
         <Stack spacing={1} alignItems="center">
@@ -65,7 +67,10 @@ export function SelectionMode({ listId, initialWords }: SelectionModeProps) {
             All new words in this list have been processed.
           </Typography>
         </Stack>
-        <Button variant="outlined" onClick={goBack}>Back to list</Button>
+        <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 320 }}>
+          <Button variant="contained" fullWidth onClick={goToEncoding}>→ Encoding Mode</Button>
+          <Button variant="outlined" fullWidth onClick={goBack}>Back to list</Button>
+        </Stack>
       </Stack>
     );
   }
