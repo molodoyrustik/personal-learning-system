@@ -93,6 +93,8 @@
     "russian": "Russian (ru)",
     "english": "English (en)",
     "languageError": "Source and target language must be different.",
+    "editListHeading": "Edit list",
+    "addWordsAction": "Add words",
     "importWords": "+ Import",
     "noWordsYet": "No words yet. Add manually or import.",
     "wordAdded": "{count, plural, one {# word} other {# words}} added",

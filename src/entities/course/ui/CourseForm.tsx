@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, Stack, TextField, Typography } from "@mui/material";
+import { Button, IconButton, Stack, TextField, Typography } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
@@ -42,14 +43,14 @@ export function CourseForm({
 
   return (
     <Stack spacing={3} sx={{ maxWidth: 560 }}>
-      <Button
-        variant="text"
+      <IconButton
         onClick={() => router.push(backHref)}
         size="small"
         sx={{ alignSelf: "flex-start" }}
+        aria-label="Back"
       >
-        ←
-      </Button>
+        <ArrowBackIcon fontSize="small" />
+      </IconButton>
 
       <Typography variant="h1">{heading}</Typography>
 

@@ -14,6 +14,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -220,7 +221,7 @@ export function Characteristics({ characteristics }: CharacteristicsProps) {
           <Stack direction="row" justifyContent="space-between" alignItems="center">
             <Typography variant="h2">{t("addCharacteristicsBtn")}</Typography>
             <IconButton size="small" onClick={() => setDrawerOpen(false)} aria-label="Close">
-              ✕
+              <CloseIcon fontSize="small" />
             </IconButton>
           </Stack>
 

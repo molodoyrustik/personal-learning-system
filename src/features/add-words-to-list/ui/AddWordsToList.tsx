@@ -11,6 +11,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import type { List } from "@/entities/list";
@@ -165,7 +166,7 @@ export function AddWordsToList({ list }: AddWordsToListProps) {
                           onClick={() => handleRemoveWord(word.id)}
                           aria-label="Remove word"
                         >
-                          ✕
+                          <CloseIcon fontSize="small" />
                         </IconButton>
                       </Stack>
                     ))}

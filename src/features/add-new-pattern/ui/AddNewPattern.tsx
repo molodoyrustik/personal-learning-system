@@ -10,6 +10,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -212,7 +213,7 @@ export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
                           onClick={() => handleRemoveSentence(s.id)}
                           aria-label={tCommon("remove")}
                         >
-                          ✕
+                          <CloseIcon fontSize="small" />
                         </IconButton>
                       </Stack>
                     ))}

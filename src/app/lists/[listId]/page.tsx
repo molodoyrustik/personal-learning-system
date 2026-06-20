@@ -6,15 +6,18 @@ import { notFound } from "next/navigation";
 
 type ListDetailPageProps = {
   params: Promise<{ listId: string }>;
+  searchParams: Promise<{ lessonId?: string; courseId?: string }>;
 };
 
-export default async function ListDetailPage({ params }: ListDetailPageProps) {
+export default async function ListDetailPage({ params, searchParams }: ListDetailPageProps) {
   const { listId } = await params;
+  const { lessonId, courseId } = await searchParams;
+  const lessonHref = lessonId && courseId ? `/courses/${courseId}/lessons/${lessonId}` : undefined;
   const [list, words, reviewCount] = await Promise.all([
     getListById(listId),
     getWordsByListId(listId),
     getDueReviewWordCountByListId(listId),
   ]);
   if (!list) notFound();
-  return <ListDetails list={list} words={words} reviewCount={reviewCount} />;
+  return <ListDetails list={list} words={words} reviewCount={reviewCount} lessonHref={lessonHref} />;
 }

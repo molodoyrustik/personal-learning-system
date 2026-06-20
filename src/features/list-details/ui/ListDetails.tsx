@@ -12,9 +12,13 @@ import {
   DialogContentText,
   DialogTitle,
   Divider,
+  IconButton,
+  Menu,
+  MenuItem,
   Stack,
   Typography,
 } from "@mui/material";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
@@ -31,6 +35,7 @@ type ListDetailsProps = {
   list: List;
   words: Word[];
   reviewCount: number;
+  lessonHref?: string;
 };
 
 // STATUS_LABELS is built dynamically inside the component using t()
@@ -51,7 +56,7 @@ const STATUS_COLORS: Record<
   known: "success",
 };
 
-export function ListDetails({ list, words, reviewCount }: ListDetailsProps) {
+export function ListDetails({ list, words, reviewCount, lessonHref }: ListDetailsProps) {
   const t = useTranslations("Lists");
   const tCommon = useTranslations("Common");
 
@@ -68,6 +73,8 @@ export function ListDetails({ list, words, reviewCount }: ListDetailsProps) {
     known: t("statusKnown"),
   };
 
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const closeMenu = () => setMenuAnchor(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -125,24 +132,32 @@ export function ListDetails({ list, words, reviewCount }: ListDetailsProps) {
     <>
       <Stack spacing={0.5}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Link href="/lists" style={{ textDecoration: "none" }}>
+          <Link href={lessonHref ?? "/lists"} style={{ textDecoration: "none" }}>
             <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }}>
-              {t("backToLists")}
+              {lessonHref ? t("backToLesson") : t("backToLists")}
             </Button>
           </Link>
-          <Stack direction="row" spacing={1}>
-            <Link href={`/lists/${list.id}/edit`} style={{ textDecoration: "none" }}>
-              <Button variant="outlined" size="small">{t("addWords")}</Button>
-            </Link>
-            <Button
-              variant="outlined"
-              size="small"
-              color="error"
-              onClick={() => setDeleteOpen(true)}
-            >
+          <IconButton
+            onClick={(e) => setMenuAnchor(e.currentTarget)}
+            aria-label="More actions"
+            sx={{ color: "text.secondary" }}
+          >
+            <MoreVertIcon fontSize="small" />
+          </IconButton>
+          <Menu
+            anchorEl={menuAnchor}
+            open={Boolean(menuAnchor)}
+            onClose={closeMenu}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
+          >
+            <MenuItem component={Link} href={`/lists/${list.id}/edit`} onClick={closeMenu}>
+              {tCommon("edit")}
+            </MenuItem>
+            <MenuItem onClick={() => { closeMenu(); setDeleteOpen(true); }} sx={{ color: "error.main" }}>
               {tCommon("delete")}
-            </Button>
-          </Stack>
+            </MenuItem>
+          </Menu>
         </Stack>
 
         <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>

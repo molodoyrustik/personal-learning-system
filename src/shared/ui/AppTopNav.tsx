@@ -13,6 +13,7 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
 import Link from "next/link";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
@@ -70,7 +71,7 @@ export function AppTopNav({ isAuthenticated }: { isAuthenticated: boolean }) {
           <Box sx={{ flex: 1, display: { xs: "flex", sm: "none" }, justifyContent: "flex-end", gap: 1, alignItems: "center" }}>
             <LanguageSwitcher />
             <IconButton onClick={() => setDrawerOpen(true)} color="inherit" aria-label={t("menu")}>
-              ☰
+              <MenuIcon />
             </IconButton>
           </Box>
         )}

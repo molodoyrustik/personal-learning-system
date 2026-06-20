@@ -13,6 +13,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { generateId } from "@/shared/lib/ids";
@@ -110,7 +111,7 @@ export function ImportDrawer({ open, onClose, onImport }: ImportDrawerProps) {
         >
           <Typography variant="h2">{t("importWords")}</Typography>
           <IconButton onClick={onClose} size="small" aria-label={t("close")}>
-            ✕
+            <CloseIcon fontSize="small" />
           </IconButton>
         </Stack>
 

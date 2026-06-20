@@ -11,9 +11,11 @@ import {
   DialogContentText,
   DialogTitle,
   Divider,
+  IconButton,
   Stack,
   Typography,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
@@ -37,6 +39,7 @@ type PatternDetailsProps = {
   pattern: Pattern;
   sentences: PatternSentence[];
   runs: PatternRun[];
+  lessonHref?: string;
 };
 
 // STATUS_LABELS built dynamically inside the component using t()
@@ -54,7 +57,7 @@ function formatDuration(sec: number): string {
   return s > 0 ? `${m} min ${s}s` : `${m} min`;
 }
 
-export function PatternDetails({ pattern, sentences, runs }: PatternDetailsProps) {
+export function PatternDetails({ pattern, sentences, runs, lessonHref }: PatternDetailsProps) {
   const t = useTranslations("Patterns");
   const tCommon = useTranslations("Common");
 
@@ -118,9 +121,9 @@ export function PatternDetails({ pattern, sentences, runs }: PatternDetailsProps
   return (
     <>
       <Stack spacing={0.5}>
-        <Link href="/patterns" style={{ textDecoration: "none" }}>
+        <Link href={lessonHref ?? "/patterns"} style={{ textDecoration: "none" }}>
           <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }}>
-            {t("backToPatterns")}
+            {lessonHref ? t("backToLesson") : t("backToPatterns")}
           </Button>
         </Link>
         <Typography variant="h1">{pattern.name}</Typography>
@@ -265,13 +268,14 @@ export function PatternDetails({ pattern, sentences, runs }: PatternDetailsProps
                         color={STATUS_COLORS[s.status]}
                         variant="outlined"
                       />
-                      <Button
+                      <IconButton
                         size="small"
                         color="error"
                         onClick={() => deleteSentenceAction(s.id, patternId)}
+                        aria-label="Delete sentence"
                       >
-                        ✕
-                      </Button>
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
                     </Stack>
                   </Stack>
                 ))}

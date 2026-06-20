@@ -93,6 +93,8 @@
     "russian": "Русский (ru)",
     "english": "Английский (en)",
     "languageError": "Исходный и целевой языки должны различаться.",
+    "editListHeading": "Редактировать список",
+    "addWordsAction": "Добавить слова",
     "importWords": "+ Импорт",
     "noWordsYet": "Слов пока нет. Добавьте вручную или импортируйте.",
     "wordAdded": "Добавлено {count, plural, one {# слово} few {# слова} other {# слов}}",

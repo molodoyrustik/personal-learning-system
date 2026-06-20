@@ -11,12 +11,15 @@ import {
   DialogTitle,
   Divider,
   FormControl,
+  IconButton,
   InputLabel,
+  Menu,
   MenuItem,
   Select,
   Stack,
   Typography,
 } from "@mui/material";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -43,6 +46,12 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
   const router = useRouter();
   const t = useTranslations("Lessons");
   const tCommon = useTranslations("Common");
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const closeMenu = () => setMenuAnchor(null);
+  const [listsMenuAnchor, setListsMenuAnchor] = useState<null | HTMLElement>(null);
+  const closeListsMenu = () => setListsMenuAnchor(null);
+  const [patternsMenuAnchor, setPatternsMenuAnchor] = useState<null | HTMLElement>(null);
+  const closePatternsMenu = () => setPatternsMenuAnchor(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -128,19 +137,34 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
             </Typography>
           )}
         </Stack>
-        <Stack direction="row" spacing={1}>
-          <Button
-            size="small"
-            variant="outlined"
+        <IconButton
+          onClick={(e) => setMenuAnchor(e.currentTarget)}
+          aria-label="More actions"
+          sx={{ color: "text.secondary" }}
+        >
+          <MoreVertIcon fontSize="small" />
+        </IconButton>
+        <Menu
+          anchorEl={menuAnchor}
+          open={Boolean(menuAnchor)}
+          onClose={closeMenu}
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+          transformOrigin={{ vertical: "top", horizontal: "right" }}
+        >
+          <MenuItem
             component={Link}
             href={`/courses/${courseId}/lessons/${lesson.id}/edit`}
+            onClick={closeMenu}
           >
             {tCommon("edit")}
-          </Button>
-          <Button size="small" color="error" variant="outlined" onClick={() => setDeleteOpen(true)}>
+          </MenuItem>
+          <MenuItem
+            onClick={() => { closeMenu(); setDeleteOpen(true); }}
+            sx={{ color: "error.main" }}
+          >
             {t("deleteLesson")}
-          </Button>
-        </Stack>
+          </MenuItem>
+        </Menu>
       </Stack>
 
       {/* ── Word Lists ─────────────────────────────────────────── */}
@@ -149,24 +173,29 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
           <Stack spacing={2}>
             <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Typography variant="h3">{t("wordLists")}</Typography>
-              <Stack direction="row" spacing={1}>
-                <Button
-                  variant="contained"
-                  size="small"
-                  onClick={() => router.push(`/lists/new?${lessonParams}`)}
-                >
+              <IconButton
+                size="small"
+                onClick={(e) => setListsMenuAnchor(e.currentTarget)}
+                sx={{ color: "text.secondary" }}
+              >
+                <MoreVertIcon fontSize="small" />
+              </IconButton>
+              <Menu
+                anchorEl={listsMenuAnchor}
+                open={Boolean(listsMenuAnchor)}
+                onClose={closeListsMenu}
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "right" }}
+              >
+                <MenuItem onClick={() => { closeListsMenu(); router.push(`/lists/new?${lessonParams}`); }}>
                   {t("createWordList")}
-                </Button>
+                </MenuItem>
                 {availableLists.length > 0 && (
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => setShowAttachList((v) => !v)}
-                  >
+                  <MenuItem onClick={() => { closeListsMenu(); setShowAttachList((v) => !v); }}>
                     {t("attachExisting")}
-                  </Button>
+                  </MenuItem>
                 )}
-              </Stack>
+              </Menu>
             </Stack>
 
             {showAttachList && availableLists.length > 0 && (
@@ -206,7 +235,7 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
                     alignItems="center"
                     sx={{ py: 1 }}
                   >
-                    <Link href={`/lists/${list.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                    <Link href={`/lists/${list.id}?${lessonParams}`} style={{ textDecoration: "none", color: "inherit" }}>
                       <Typography variant="body1" sx={{ "&:hover": { textDecoration: "underline" } }}>
                         {list.name}
                       </Typography>
@@ -234,24 +263,29 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
           <Stack spacing={2}>
             <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Typography variant="h3">{t("patternLists")}</Typography>
-              <Stack direction="row" spacing={1}>
-                <Button
-                  variant="contained"
-                  size="small"
-                  onClick={() => router.push(`/patterns/new?${lessonParams}`)}
-                >
+              <IconButton
+                size="small"
+                onClick={(e) => setPatternsMenuAnchor(e.currentTarget)}
+                sx={{ color: "text.secondary" }}
+              >
+                <MoreVertIcon fontSize="small" />
+              </IconButton>
+              <Menu
+                anchorEl={patternsMenuAnchor}
+                open={Boolean(patternsMenuAnchor)}
+                onClose={closePatternsMenu}
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "right" }}
+              >
+                <MenuItem onClick={() => { closePatternsMenu(); router.push(`/patterns/new?${lessonParams}`); }}>
                   {t("createPatternList")}
-                </Button>
+                </MenuItem>
                 {availablePatterns.length > 0 && (
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => setShowAttachPattern((v) => !v)}
-                  >
+                  <MenuItem onClick={() => { closePatternsMenu(); setShowAttachPattern((v) => !v); }}>
                     {t("attachExisting")}
-                  </Button>
+                  </MenuItem>
                 )}
-              </Stack>
+              </Menu>
             </Stack>
 
             {showAttachPattern && availablePatterns.length > 0 && (
@@ -291,7 +325,7 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
                     alignItems="center"
                     sx={{ py: 1 }}
                   >
-                    <Link href={`/patterns/${pattern.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                    <Link href={`/patterns/${pattern.id}?${lessonParams}`} style={{ textDecoration: "none", color: "inherit" }}>
                       <Typography variant="body1" sx={{ "&:hover": { textDecoration: "underline" } }}>
                         {pattern.name}
                       </Typography>

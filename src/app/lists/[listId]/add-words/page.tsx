@@ -1,14 +1,14 @@
 import { notFound } from "next/navigation";
 import { getListById } from "@/entities/list/api/list-api";
-import { EditList } from "@/features/edit-list/ui/EditList";
+import { AddWordsToList } from "@/features/add-words-to-list";
 
-type EditListPageProps = {
+type AddWordsPageProps = {
   params: Promise<{ listId: string }>;
 };
 
-export default async function EditListPage({ params }: EditListPageProps) {
+export default async function AddWordsPage({ params }: AddWordsPageProps) {
   const { listId } = await params;
   const list = await getListById(listId);
   if (!list) notFound();
-  return <EditList list={list} />;
+  return <AddWordsToList list={list} />;
 }

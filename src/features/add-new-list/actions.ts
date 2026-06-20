@@ -6,6 +6,26 @@ import { nowISO } from "@/shared/lib/date";
 import { generateId } from "@/shared/lib/ids";
 import type { LanguageCode } from "@/entities/list";
 
+export async function updateListAction(
+  listId: string,
+  input: { name: string; description: string | null; sourceLanguage: LanguageCode; targetLanguage: LanguageCode },
+): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("lists")
+    .update({
+      name: input.name,
+      description: input.description,
+      source_language: input.sourceLanguage,
+      target_language: input.targetLanguage,
+      updated_at: nowISO(),
+    })
+    .eq("id", listId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/lists/${listId}`);
+  revalidatePath("/lists");
+}
+
 export async function createListWithWords(params: {
   name: string;
   description: string | null;
