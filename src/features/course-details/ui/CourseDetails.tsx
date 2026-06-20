@@ -4,6 +4,11 @@ import {
   Button,
   Card,
   CardContent,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   IconButton,
   Stack,
   TextField,
@@ -11,7 +16,7 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import type { Course } from "@/entities/course";
 import type { Lesson } from "@/entities/lesson";
 import { deleteCourseAction } from "@/entities/course/api/course-actions";
@@ -24,6 +29,8 @@ type CourseDetailsProps = {
 
 export function CourseDetails({ course, lessons }: CourseDetailsProps) {
   const router = useRouter();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [addingLesson, setAddingLesson] = useState(false);
   const [lessonTitle, setLessonTitle] = useState("");
 
@@ -41,13 +48,29 @@ export function CourseDetails({ course, lessons }: CourseDetailsProps) {
     router.refresh();
   }
 
-  async function handleDeleteCourse() {
-    await deleteCourseAction(course.id);
-    router.push("/courses");
+  function handleDeleteConfirm() {
+    startTransition(async () => {
+      await deleteCourseAction(course.id);
+      router.push("/courses");
+    });
   }
 
   return (
     <Stack spacing={3}>
+      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>
+        <DialogTitle>Delete course?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            This will permanently delete &quot;{course.title}&quot; and all its lessons. This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteOpen(false)} disabled={isPending}>Cancel</Button>
+          <Button color="error" onClick={handleDeleteConfirm} disabled={isPending}>
+            {isPending ? "Deleting…" : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Button
         variant="text"
         onClick={() => router.push("/courses")}
@@ -66,9 +89,19 @@ export function CourseDetails({ course, lessons }: CourseDetailsProps) {
             </Typography>
           )}
         </Stack>
-        <Button size="small" color="error" variant="outlined" onClick={handleDeleteCourse}>
-          Delete course
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button
+            size="small"
+            variant="outlined"
+            component={Link}
+            href={`/courses/${course.id}/edit`}
+          >
+            Edit
+          </Button>
+          <Button size="small" color="error" variant="outlined" onClick={() => setDeleteOpen(true)}>
+            Delete course
+          </Button>
+        </Stack>
       </Stack>
 
       <Stack direction="row" justifyContent="space-between" alignItems="center">
