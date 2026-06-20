@@ -53,6 +53,8 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
   const [patternsMenuAnchor, setPatternsMenuAnchor] = useState<null | HTMLElement>(null);
   const closePatternsMenu = () => setPatternsMenuAnchor(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [removeListId, setRemoveListId] = useState<string | null>(null);
+  const [removePatternId, setRemovePatternId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleDeleteConfirm() {
@@ -82,9 +84,13 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
     router.refresh();
   }
 
-  async function handleRemoveList(listId: string) {
-    await removeWordListFromLessonAction(lesson.id, listId, courseId);
-    router.refresh();
+  function handleRemoveListConfirm() {
+    if (!removeListId) return;
+    startTransition(async () => {
+      await removeWordListFromLessonAction(lesson.id, removeListId, courseId);
+      setRemoveListId(null);
+      router.refresh();
+    });
   }
 
   async function handleAttachPattern() {
@@ -95,15 +101,49 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
     router.refresh();
   }
 
-  async function handleRemovePattern(patternId: string) {
-    await removePatternFromLessonAction(lesson.id, patternId, courseId);
-    router.refresh();
+  function handleRemovePatternConfirm() {
+    if (!removePatternId) return;
+    startTransition(async () => {
+      await removePatternFromLessonAction(lesson.id, removePatternId, courseId);
+      setRemovePatternId(null);
+      router.refresh();
+    });
   }
 
   const lessonParams = `lessonId=${lesson.id}&courseId=${courseId}`;
 
   return (
     <Stack spacing={3}>
+      <Dialog open={Boolean(removeListId)} onClose={() => setRemoveListId(null)}>
+        <DialogTitle>{t("removeListTitle")}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {t("removeListMessage", { name: attachedLists.find((l) => l.id === removeListId)?.name ?? "" })}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRemoveListId(null)} disabled={isPending}>{tCommon("cancel")}</Button>
+          <Button color="error" onClick={handleRemoveListConfirm} disabled={isPending}>
+            {isPending ? tCommon("deleting") : tCommon("remove")}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={Boolean(removePatternId)} onClose={() => setRemovePatternId(null)}>
+        <DialogTitle>{t("removePatternTitle")}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {t("removePatternMessage", { name: attachedPatterns.find((p) => p.id === removePatternId)?.name ?? "" })}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRemovePatternId(null)} disabled={isPending}>{tCommon("cancel")}</Button>
+          <Button color="error" onClick={handleRemovePatternConfirm} disabled={isPending}>
+            {isPending ? tCommon("deleting") : tCommon("remove")}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>
         <DialogTitle>{t("deleteTitle")}</DialogTitle>
         <DialogContent>
@@ -240,7 +280,7 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
                         {list.name}
                       </Typography>
                     </Link>
-                    <Button size="small" color="error" variant="text" onClick={() => handleRemoveList(list.id)}>
+                    <Button size="small" color="error" variant="text" onClick={() => setRemoveListId(list.id)}>
                       {tCommon("remove")}
                     </Button>
                   </Stack>
@@ -330,7 +370,7 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
                         {pattern.name}
                       </Typography>
                     </Link>
-                    <Button size="small" color="error" variant="text" onClick={() => handleRemovePattern(pattern.id)}>
+                    <Button size="small" color="error" variant="text" onClick={() => setRemovePatternId(pattern.id)}>
                       {tCommon("remove")}
                     </Button>
                   </Stack>

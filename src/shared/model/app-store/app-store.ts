@@ -219,7 +219,7 @@ export function createAppStore() {
 
             if (remembered) {
               const recallSuccessCount = word.recallSuccessCount + 1;
-              const status = recallSuccessCount >= 3 ? "memorized" : "learning";
+              const status = recallSuccessCount >= 6 ? "memorized" : "learning";
               return {
                 words: patchWord(s.words, wordId, {
                   recallSuccessCount,

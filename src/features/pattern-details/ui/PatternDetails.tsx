@@ -12,10 +12,13 @@ import {
   DialogTitle,
   Divider,
   IconButton,
+  Menu,
+  MenuItem,
   Stack,
   Typography,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
@@ -69,6 +72,8 @@ export function PatternDetails({ pattern, sentences, runs, lessonHref }: Pattern
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const closeMenu = () => setMenuAnchor(null);
   const [isPending, startTransition] = useTransition();
   const patternId = pattern.id;
 
@@ -121,11 +126,34 @@ export function PatternDetails({ pattern, sentences, runs, lessonHref }: Pattern
   return (
     <>
       <Stack spacing={0.5}>
-        <Link href={lessonHref ?? "/patterns"} style={{ textDecoration: "none" }}>
-          <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }}>
-            {lessonHref ? t("backToLesson") : t("backToPatterns")}
-          </Button>
-        </Link>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Link href={lessonHref ?? "/patterns"} style={{ textDecoration: "none" }}>
+            <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }}>
+              {lessonHref ? t("backToLesson") : t("backToPatterns")}
+            </Button>
+          </Link>
+          <IconButton
+            onClick={(e) => setMenuAnchor(e.currentTarget)}
+            aria-label="More actions"
+            sx={{ color: "text.secondary" }}
+          >
+            <MoreVertIcon fontSize="small" />
+          </IconButton>
+          <Menu
+            anchorEl={menuAnchor}
+            open={Boolean(menuAnchor)}
+            onClose={closeMenu}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
+          >
+            <MenuItem component={Link} href={`/patterns/${patternId}/edit`} onClick={closeMenu}>
+              {tCommon("edit")}
+            </MenuItem>
+            <MenuItem onClick={() => { closeMenu(); setDeleteOpen(true); }} sx={{ color: "error.main" }}>
+              {tCommon("delete")}
+            </MenuItem>
+          </Menu>
+        </Stack>
         <Typography variant="h1">{pattern.name}</Typography>
         {pattern.description && (
           <Typography variant="body2" color="text.secondary">
@@ -281,21 +309,6 @@ export function PatternDetails({ pattern, sentences, runs, lessonHref }: Pattern
                 ))}
               </Stack>
             )}
-          </Stack>
-        </CardContent>
-      </Card>
-
-      <Card variant="outlined">
-        <CardContent>
-          <Stack spacing={1.5}>
-            <Typography variant="h3">{t("dangerZone")}</Typography>
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => setDeleteOpen(true)}
-            >
-              {t("deletePattern")}
-            </Button>
           </Stack>
         </CardContent>
       </Card>

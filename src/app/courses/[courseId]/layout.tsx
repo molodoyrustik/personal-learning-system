@@ -7,7 +7,7 @@ type CourseLayoutProps = {
 
 export default function CourseLayout({ children }: CourseLayoutProps) {
   return (
-    <Container sx={{ py: 4 }}>
+    <Container sx={{ pt: 1.5, pb: 4 }}>
       <Stack spacing={3}>{children}</Stack>
     </Container>
   );

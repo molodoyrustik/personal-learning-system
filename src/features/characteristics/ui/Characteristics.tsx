@@ -113,22 +113,14 @@ export function Characteristics({ characteristics }: CharacteristicsProps) {
           gap={1}
         >
           <Typography variant="h1">{t("title")}</Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap">
-            <Button variant="outlined" onClick={() => setDrawerOpen(true)}>
-              {t("import")}
-            </Button>
-            <Button component={Link} href="/characteristics/new" variant="contained">
-              {t("addCharacteristic")}
-            </Button>
-          </Stack>
+          <Button variant="outlined" onClick={() => setDrawerOpen(true)}>
+            {t("import")}
+          </Button>
         </Stack>
 
         <Card variant="outlined">
           <CardContent>
             <Stack spacing={1.5}>
-              <Typography variant="body2" color="text.secondary">
-                {t("quickAdd")}
-              </Typography>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems="flex-start">
                 <TextField
                   label={t("key")}

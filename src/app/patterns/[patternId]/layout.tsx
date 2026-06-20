@@ -7,7 +7,7 @@ type PatternLayoutProps = {
 
 export default function PatternLayout({ children }: PatternLayoutProps) {
   return (
-    <Container sx={{ py: 4 }}>
+    <Container sx={{ pt: 1.5, pb: 4 }}>
       <Stack spacing={3}>{children}</Stack>
     </Container>
   );

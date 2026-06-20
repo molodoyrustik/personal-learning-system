@@ -42,7 +42,7 @@ export function AppTopNav({ isAuthenticated }: { isAuthenticated: boolean }) {
         <Typography
           variant="h3"
           component={Link}
-          href="/courses"
+          href="/"
           sx={{ mr: 2, color: "text.primary", textDecoration: "none", fontWeight: 600 }}
         >
           PLS

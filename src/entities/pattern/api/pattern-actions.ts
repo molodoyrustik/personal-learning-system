@@ -53,6 +53,19 @@ export async function createPatternWithSentences(params: {
   return { patternId };
 }
 
+export async function updatePatternAction(
+  patternId: string,
+  params: { name: string; description: string | null },
+): Promise<void> {
+  const { supabase } = await getSupabase();
+  await supabase.from("patterns").update({
+    name: params.name,
+    description: params.description,
+    updated_at: nowISO(),
+  }).eq("id", patternId);
+  revalidatePath(`/patterns/${patternId}`);
+}
+
 export async function importSentencesAction(
   patternId: string,
   sentences: { sourceText: string; targetText: string }[],

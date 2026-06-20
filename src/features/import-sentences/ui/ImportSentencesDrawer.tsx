@@ -28,7 +28,7 @@ export type ImportedSentence = {
   targetText: string;
 };
 
-type PairSep = "pipe" | "dash" | "custom";
+type PairSep = "dash" | "custom";
 type ItemSep = "newline" | "semicolon" | "custom";
 
 // ---------------------------------------------------------------------------
@@ -42,7 +42,6 @@ function resolveItemSep(itemSep: ItemSep, custom: string): string {
 }
 
 function resolvePairSep(pairSep: PairSep, custom: string): string {
-  if (pairSep === "pipe") return "|";
   if (pairSep === "dash") return " - ";
   return custom;
 }
@@ -84,7 +83,7 @@ export function ImportSentencesDrawer({
   const t = useTranslations("Import");
   const tCommon = useTranslations("Common");
   const [raw, setRaw] = useState("");
-  const [pairSep, setPairSep] = useState<PairSep>("pipe");
+  const [pairSep, setPairSep] = useState<PairSep>("dash");
   const [customPairSep, setCustomPairSep] = useState("");
   const [itemSep, setItemSep] = useState<ItemSep>("newline");
   const [customItemSep, setCustomItemSep] = useState("");
@@ -145,7 +144,6 @@ export function ImportSentencesDrawer({
             size="small"
             fullWidth
           >
-            <MenuItem value="pipe">{t("pipe")}</MenuItem>
             <MenuItem value="dash">{t("dash")}</MenuItem>
             <MenuItem value="custom">{tCommon("custom")}</MenuItem>
           </Select>

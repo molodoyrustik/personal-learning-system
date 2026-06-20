@@ -1,23 +1,30 @@
+"use client";
+
 import { Box, Button, Stack, TextField, Typography } from "@mui/material";
 import Link from "next/link";
+import { useFormStatus } from "react-dom";
 import { signIn } from "./actions";
 
-type Props = {
-  searchParams: Promise<{ error?: string }>;
-};
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" variant="contained" fullWidth disabled={pending}>
+      {pending ? "Signing in…" : "Sign in"}
+    </Button>
+  );
+}
 
-export default async function SignInPage({ searchParams }: Props) {
-  const { error } = await searchParams;
-
+export default function SignInPage() {
   return (
     <Box
       display="flex"
-      alignItems="center"
+      alignItems="flex-start"
       justifyContent="center"
-      minHeight="100vh"
+      minHeight="calc(100vh - 64px)"
+      pt="15vh"
     >
       <Stack spacing={3} width={320}>
-        <Typography variant="h1">Personal Learning System</Typography>
+        <Typography variant="h1">Sign in</Typography>
 
         <form action={signIn}>
           <Stack spacing={2}>
@@ -37,14 +44,7 @@ export default async function SignInPage({ searchParams }: Props) {
               fullWidth
               size="small"
             />
-            {error && (
-              <Typography variant="body2" color="error">
-                {error}
-              </Typography>
-            )}
-            <Button type="submit" variant="contained" fullWidth>
-              Sign in
-            </Button>
+            <SubmitButton />
           </Stack>
         </form>
 

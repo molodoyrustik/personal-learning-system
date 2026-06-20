@@ -91,12 +91,10 @@ export function ListDetails({ list, words, reviewCount, lessonHref }: ListDetail
     [words],
   );
 
-  const recallRounds = useMemo(() => {
-    const r1 = recallQueue.filter((w) => w.recallSuccessCount === 0).length;
-    const r2 = recallQueue.filter((w) => w.recallSuccessCount === 1).length;
-    const r3 = recallQueue.filter((w) => w.recallSuccessCount === 2).length;
-    return [r1, r2, r3];
-  }, [recallQueue]);
+  const recallRounds = useMemo(
+    () => Array.from({ length: 6 }, (_, i) => recallQueue.filter((w) => w.recallSuccessCount === i).length),
+    [recallQueue],
+  );
 
   const statusGroups = [
     { label: t("statusNew"), count: words.filter((w) => w.status === "new").length },
@@ -122,7 +120,7 @@ export function ListDetails({ list, words, reviewCount, lessonHref }: ListDetail
       count: recallQueue.length,
       active: recallQueue.length > 0,
       detail: recallQueue.length > 0
-        ? recallRounds.map((n, i) => `${([t("round1"), t("round2"), t("round3")])[i]}: ${n}`).filter((_, i) => recallRounds[i] > 0).join(" · ") || null
+        ? recallRounds.map((n, i) => `${([t("round1"), t("round2"), t("round3"), t("round4"), t("round5"), t("round6")])[i]}: ${n}`).filter((_, i) => recallRounds[i] > 0).join(" · ") || null
         : null,
     },
     { label: t("review"), href: "review", count: reviewCount, active: reviewCount > 0, detail: null },

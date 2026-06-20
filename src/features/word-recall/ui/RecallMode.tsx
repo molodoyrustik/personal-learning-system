@@ -11,18 +11,22 @@ import {
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import type { List } from "@/entities/list";
 import type { Word } from "@/entities/word/model/types";
 import { markRecallResultAction } from "@/entities/word/api/word-actions";
 
+const TOTAL_ROUNDS = 6;
+const RECALL_STATUSES = ["encoded", "learning", "weak"] as const;
+
 type RecallModeProps = {
-  listId: string;
+  list: List;
   initialWords: Word[];
 };
 
-const RECALL_STATUSES = ["encoded", "learning", "weak"] as const;
-
-export function RecallMode({ listId, initialWords }: RecallModeProps) {
+export function RecallMode({ list, initialWords }: RecallModeProps) {
   const t = useTranslations("WordModes");
+  const router = useRouter();
+
   const [queue, setQueue] = useState<Word[]>(() =>
     initialWords.filter((w) =>
       (RECALL_STATUSES as readonly string[]).includes(w.status),
@@ -33,11 +37,18 @@ export function RecallMode({ listId, initialWords }: RecallModeProps) {
   const [memorizedCount, setMemorizedCount] = useState(0);
   const [stillLearningCount, setStillLearningCount] = useState(0);
 
-  const router = useRouter();
-  function goBack() { router.refresh(); router.push(`/lists/${listId}`); }
+  function goBack() { router.refresh(); router.push(`/lists/${list.id}`); }
 
   const total = queue.length;
   const current = queue[0] ?? null;
+
+  // Even round (0,2,4): source → target. Odd round (1,3,5): target → source.
+  const isForward = current ? current.recallSuccessCount % 2 === 0 : true;
+  const prompt = current ? (isForward ? current.sourceText : current.targetText) : "";
+  const answer = current ? (isForward ? current.targetText : current.sourceText) : "";
+  const fromLang = isForward ? list.sourceLanguage.toUpperCase() : list.targetLanguage.toUpperCase();
+  const toLang = isForward ? list.targetLanguage.toUpperCase() : list.sourceLanguage.toUpperCase();
+  const currentRound = current ? current.recallSuccessCount + 1 : 0;
 
   function moveToNext() {
     setQueue((q) => q.slice(1));
@@ -48,7 +59,7 @@ export function RecallMode({ listId, initialWords }: RecallModeProps) {
   async function handleRemembered() {
     if (!current) return;
     await markRecallResultAction(current.id, true);
-    if (current.recallSuccessCount + 1 >= 3) {
+    if (current.recallSuccessCount + 1 >= TOTAL_ROUNDS) {
       setMemorizedCount((n) => n + 1);
     } else {
       setStillLearningCount((n) => n + 1);
@@ -90,7 +101,7 @@ export function RecallMode({ listId, initialWords }: RecallModeProps) {
         </Stack>
         <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 320 }}>
           {stillLearningCount > 0 && (
-            <Button variant="contained" fullWidth onClick={() => { window.location.href = `/lists/${listId}/recall`; }}>
+            <Button variant="contained" fullWidth onClick={() => { window.location.href = `/lists/${list.id}/recall`; }}>
               {t("toRecallAgain")}
             </Button>
           )}
@@ -106,23 +117,23 @@ export function RecallMode({ listId, initialWords }: RecallModeProps) {
         <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} onClick={goBack}>
           {t("back")}
         </Button>
-        <Typography variant="caption" color="text.secondary">
-          {doneCount + 1} / {total}
-        </Typography>
+        <Stack alignItems="flex-end" spacing={0}>
+          <Typography variant="caption" color="text.secondary">
+            {doneCount + 1} / {total}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {fromLang} → {toLang} · {t("roundOf", { current: currentRound, total: TOTAL_ROUNDS })}
+          </Typography>
+        </Stack>
       </Stack>
 
       <Card>
         <CardContent>
           <Stack spacing={2.5}>
-            <Stack spacing={0.5} alignItems="center">
-              <Typography variant="h1" textAlign="center">
-                {current.sourceText}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {([t("round1"), t("round2"), t("round3")])[current.recallSuccessCount] ?? `${current.recallSuccessCount + 1} / 3`}
-              </Typography>
-            </Stack>
-            {current.sceneDescription && (
+            <Typography variant="h1" textAlign="center">
+              {prompt}
+            </Typography>
+            {isForward && current?.sceneDescription && (
               <>
                 <Divider />
                 <Stack spacing={0.5}>
@@ -131,7 +142,7 @@ export function RecallMode({ listId, initialWords }: RecallModeProps) {
                 </Stack>
               </>
             )}
-            {current.soundAssociation && (
+            {isForward && current?.soundAssociation && (
               <Stack spacing={0.5}>
                 <Typography variant="caption" color="text.secondary">{t("association")}</Typography>
                 <Typography variant="body1">{current.soundAssociation}</Typography>
@@ -145,7 +156,7 @@ export function RecallMode({ listId, initialWords }: RecallModeProps) {
                 <Divider />
                 <Stack alignItems="center" sx={{ py: 1 }}>
                   <Typography variant="h2" color="primary">
-                    {current.targetText}
+                    {answer}
                   </Typography>
                 </Stack>
               </>

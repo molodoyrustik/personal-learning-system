@@ -14,19 +14,25 @@ async function getSupabase() {
 }
 
 // Интервалы повторения (дни) по числу суммарных успешных вспоминаний.
-// recallSuccessCount после достижения memorized (= 3):
-//   3 → устанавливается при переходе в memorized (+1 день)
-//   4 → +3 дня   (1-й review успех)
-//   5 → +7 дней  (2-й)
-//   6 → +14 дней (3-й)
-//   7 → +30 дней (4-й)
-//   8+ → known   (5-й)
+// Recall занимает 6 раундов (memorized при count = 6).
+// recallSuccessCount после memorized:
+//   6  → переход в memorized (+1 день до первого повторения)
+//   7  → +3 дня   (1-й review успех)
+//   8  → +7 дней  (2-й)
+//   9  → +14 дней (3-й)
+//   10 → +30 дней (4-й)
+//   11+ → known   (5-й)
+// Обратная совместимость: слова, запомненные по старой схеме (3 раунда):
+//   4→+3д, 5→+7д, 6→+14д (пересекается с новыми словами, но приемлемо)
 function getReviewIntervalDays(recallSuccessCount: number): number | null {
   if (recallSuccessCount === 4) return 3;
   if (recallSuccessCount === 5) return 7;
   if (recallSuccessCount === 6) return 14;
-  if (recallSuccessCount === 7) return 30;
-  return null; // >= 8 → known
+  if (recallSuccessCount === 7) return 3;
+  if (recallSuccessCount === 8) return 7;
+  if (recallSuccessCount === 9) return 14;
+  if (recallSuccessCount === 10) return 30;
+  return null; // >= 11 → known
 }
 
 export async function selectWordAction(wordId: string) {
@@ -115,7 +121,7 @@ export async function markRecallResultAction(wordId: string, remembered: boolean
 
   if (remembered) {
     const recallSuccessCount = word.recall_success_count + 1;
-    if (recallSuccessCount >= 3) {
+    if (recallSuccessCount >= 6) {
       await supabase.from("words").update({
         recall_success_count: recallSuccessCount,
         status: "memorized",

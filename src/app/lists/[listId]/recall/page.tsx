@@ -1,5 +1,7 @@
+import { getListById } from "@/entities/list/api/list-api";
 import { getWordsByListId } from "@/entities/word/api/word-api";
 import { RecallMode } from "@/features/word-recall";
+import { notFound } from "next/navigation";
 
 type RecallPageProps = {
   params: Promise<{ listId: string }>;
@@ -7,6 +9,10 @@ type RecallPageProps = {
 
 export default async function RecallPage({ params }: RecallPageProps) {
   const { listId } = await params;
-  const words = await getWordsByListId(listId);
-  return <RecallMode listId={listId} initialWords={words} />;
+  const [list, words] = await Promise.all([
+    getListById(listId),
+    getWordsByListId(listId),
+  ]);
+  if (!list) notFound();
+  return <RecallMode list={list} initialWords={words} />;
 }
