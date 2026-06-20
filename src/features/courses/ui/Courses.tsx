@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Button,
   Card,
@@ -8,6 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type { Course } from "@/entities/course";
 
 type CoursesProps = {
@@ -16,20 +19,22 @@ type CoursesProps = {
 };
 
 export function Courses({ courses, lessonCounts }: CoursesProps) {
+  const t = useTranslations("Courses");
+
   return (
     <Container sx={{ py: 4 }}>
       <Stack spacing={3}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Typography variant="h1">Courses</Typography>
+          <Typography variant="h1">{t("title")}</Typography>
           <Link href="/courses/new" style={{ textDecoration: "none" }}>
-            <Button variant="contained">Create course</Button>
+            <Button variant="contained">{t("createCourse")}</Button>
           </Link>
         </Stack>
 
         <Stack spacing={2}>
           {courses.length === 0 && (
             <Typography variant="body1" color="text.secondary">
-              No courses yet. Create your first one.
+              {t("noCoursesYet")}
             </Typography>
           )}
           {courses.map((course) => {
@@ -53,7 +58,7 @@ export function Courses({ courses, lessonCounts }: CoursesProps) {
                           )}
                         </Stack>
                         <Typography variant="body2" color="text.secondary">
-                          {count} {count === 1 ? "lesson" : "lessons"}
+                          {count} {count === 1 ? t("lesson") : t("lessons")}
                         </Typography>
                       </Stack>
                     </CardContent>

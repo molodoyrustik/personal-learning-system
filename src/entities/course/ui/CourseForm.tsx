@@ -3,6 +3,7 @@
 import { Button, Stack, TextField, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 type CourseFormProps = {
   backHref: string;
@@ -22,6 +23,8 @@ export function CourseForm({
   onSubmit,
 }: CourseFormProps) {
   const router = useRouter();
+  const tCourses = useTranslations("Courses");
+  const tCommon = useTranslations("Common");
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
   const [loading, setLoading] = useState(false);
@@ -52,7 +55,7 @@ export function CourseForm({
 
       <Stack spacing={2}>
         <TextField
-          label="Title"
+          label={tCourses("titleLabel")}
           fullWidth
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -60,7 +63,7 @@ export function CourseForm({
           autoFocus
         />
         <TextField
-          label="Description (optional)"
+          label={tCourses("descriptionLabel")}
           fullWidth
           multiline
           minRows={2}
@@ -75,7 +78,7 @@ export function CourseForm({
         disabled={!title.trim() || loading}
         sx={{ alignSelf: "flex-start" }}
       >
-        {loading ? `${submitLabel}…` : submitLabel}
+        {loading ? tCommon("saving") : submitLabel}
       </Button>
     </Stack>
   );

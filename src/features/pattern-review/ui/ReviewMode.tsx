@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import type { PatternSentence } from "@/entities/pattern";
 import {
   markSentenceCorrectAction,
@@ -15,6 +16,7 @@ type ReviewModeProps = {
 };
 
 export function ReviewMode({ patternId, initialSentences }: ReviewModeProps) {
+  const t = useTranslations("PatternModes");
   const sentences = useMemo(
     () => getMarkedQueue(initialSentences, patternId),
     [initialSentences, patternId],
@@ -26,8 +28,8 @@ export function ReviewMode({ patternId, initialSentences }: ReviewModeProps) {
       backHref={`/patterns/${patternId}`}
       onCorrect={(id) => markSentenceCorrectAction(id, "review")}
       onMistake={(id) => markSentenceMistakeAction(id)}
-      emptyLabel="No marked sentences to review."
-      completeLabel="Review complete. Run again if any sentences were re-marked."
+      emptyLabel={t("noMarkedSentences")}
+      completeLabel={t("reviewComplete")}
     />
   );
 }

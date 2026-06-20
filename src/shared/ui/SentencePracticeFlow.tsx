@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { PatternSentence } from "@/entities/pattern";
 
 // ---------------------------------------------------------------------------
@@ -57,6 +58,8 @@ export function SentencePracticeFlow({
   emptyLabel,
   completeLabel,
 }: SentencePracticeFlowProps) {
+  const t = useTranslations("PatternModes");
+  const tCommon = useTranslations("Common");
   // Both the queue and the sentences map are snapshotted on mount.
   // When onMistake fires the store changes the sentence status, which removes
   // it from the parent's filtered `sentences` prop — if we rebuilt the map
@@ -175,12 +178,12 @@ export function SentencePracticeFlow({
         sx={{ minHeight: "60vh" }}
       >
         <Stack spacing={1} alignItems="center">
-          <Typography variant="h2">Nothing here</Typography>
+          <Typography variant="h2">{t("nothingHere")}</Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center">
             {emptyLabel}
           </Typography>
         </Stack>
-        <Button variant="outlined" onClick={handleBack}>← Back</Button>
+        <Button variant="outlined" onClick={handleBack}>{tCommon("back")}</Button>
       </Stack>
     );
   }
@@ -198,12 +201,12 @@ export function SentencePracticeFlow({
         sx={{ minHeight: "60vh" }}
       >
         <Stack spacing={1} alignItems="center">
-          <Typography variant="h2">Done</Typography>
+          <Typography variant="h2">{t("reviewComplete")}</Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center">
             {completeLabel}
           </Typography>
         </Stack>
-        <Button variant="outlined" onClick={handleBack}>← Back</Button>
+        <Button variant="outlined" onClick={handleBack}>{tCommon("back")}</Button>
       </Stack>
     );
   }
@@ -227,7 +230,7 @@ export function SentencePracticeFlow({
           sx={{ px: 0, minHeight: "auto" }}
           onClick={handleBack}
         >
-          ← Back
+          {tCommon("back")}
         </Button>
         <Stack alignItems="flex-end" spacing={0.25}>
           {phase === "prompt" && (
@@ -251,7 +254,7 @@ export function SentencePracticeFlow({
             {/* Source (RU) */}
             <Stack spacing={0.5} alignItems="center">
               <Typography variant="caption" color="text.secondary">
-                Translate to English
+                {t("translateToEnglish")}
               </Typography>
               <Typography variant="h1" textAlign="center">
                 {current.sourceText}
@@ -265,7 +268,7 @@ export function SentencePracticeFlow({
                 <Stack spacing={0.5} alignItems="center">
                   {phase === "answer-auto" && (
                     <Typography variant="caption" color="error">
-                      Time is up — marked for review
+                      {t("timeIsUp")}
                     </Typography>
                   )}
                   <Typography variant="h2" color="primary" textAlign="center">
@@ -291,24 +294,24 @@ export function SentencePracticeFlow({
       {/* Action buttons */}
       {phase === "prompt" && (
         <Button variant="contained" fullWidth onClick={handleShowAnswer}>
-          Show Answer
+          {t("showAnswer")}
         </Button>
       )}
 
       {phase === "answer-manual" && (
         <Stack spacing={1.5}>
           <Button variant="contained" fullWidth onClick={handleCorrect}>
-            Correct
+            {t("correct")}
           </Button>
           <Button variant="outlined" fullWidth onClick={handleMistake}>
-            Mistake
+            {t("mistake")}
           </Button>
         </Stack>
       )}
 
       {phase === "answer-auto" && (
         <Button variant="outlined" fullWidth onClick={moveToNext}>
-          Next →
+          {t("next")}
         </Button>
       )}
     </Stack>

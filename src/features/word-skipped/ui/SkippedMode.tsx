@@ -3,6 +3,7 @@
 import { Button, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { Word } from "@/entities/word/model/types";
 import {
   saveEncodingAction,
@@ -38,41 +39,43 @@ function CompletionState({ empty, outcomes, onBack, onGoToAgain, onGoToSlowEncod
   onGoToSlowEncode: () => void;
   onGoToRecall: () => void;
 }) {
+  const t = useTranslations("WordModes");
   const { encoded, skippedAgain, sentToSlowEncode } = outcomes;
   return (
     <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
       <Stack spacing={1} alignItems="center">
-        <Typography variant="h2">{empty ? "No skipped words" : "Pass complete"}</Typography>
+        <Typography variant="h2">{empty ? t("noSkippedWords") : t("passComplete")}</Typography>
         {!empty && (
           <Typography variant="body1" color="text.secondary" textAlign="center">
-            {encoded > 0 && `${encoded} encoded`}
+            {encoded > 0 && `${encoded} ${t("encoded")}`}
             {encoded > 0 && (skippedAgain > 0 || sentToSlowEncode > 0) && " · "}
-            {skippedAgain > 0 && `${skippedAgain} need another pass`}
+            {skippedAgain > 0 && `${skippedAgain} ${t("needAnotherPass")}`}
             {skippedAgain > 0 && sentToSlowEncode > 0 && " · "}
-            {sentToSlowEncode > 0 && `${sentToSlowEncode} → Slow Encode`}
+            {sentToSlowEncode > 0 && `${sentToSlowEncode} ${t("toSlowEncode")}`}
           </Typography>
         )}
       </Stack>
       <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 320 }}>
         {!empty && skippedAgain > 0 && (
-          <Button variant="contained" fullWidth onClick={onGoToAgain}>→ Skipped again</Button>
+          <Button variant="contained" fullWidth onClick={onGoToAgain}>{t("skippedAgain")}</Button>
         )}
         {!empty && sentToSlowEncode > 0 && (
-          <Button variant={skippedAgain > 0 ? "outlined" : "contained"} fullWidth onClick={onGoToSlowEncode}>→ Slow Encode</Button>
+          <Button variant={skippedAgain > 0 ? "outlined" : "contained"} fullWidth onClick={onGoToSlowEncode}>{t("toSlowEncode")}</Button>
         )}
         {!empty && encoded > 0 && skippedAgain === 0 && sentToSlowEncode === 0 && (
-          <Button variant="contained" fullWidth onClick={onGoToRecall}>→ Recall Mode</Button>
+          <Button variant="contained" fullWidth onClick={onGoToRecall}>{t("toRecallMode")}</Button>
         )}
         {empty && (
-          <Button variant="contained" fullWidth onClick={onGoToSlowEncode}>→ Slow Encode</Button>
+          <Button variant="contained" fullWidth onClick={onGoToSlowEncode}>{t("toSlowEncode")}</Button>
         )}
-        <Button variant="outlined" fullWidth onClick={onBack}>Back to list</Button>
+        <Button variant="outlined" fullWidth onClick={onBack}>{t("backToList")}</Button>
       </Stack>
     </Stack>
   );
 }
 
 export function SkippedMode({ listId, initialWords }: SkippedModeProps) {
+  const t = useTranslations("WordModes");
   const [queue, setQueue] = useState<Word[]>(() =>
     initialWords.filter((w) => w.listId === listId && isInSkippedQueue(w)),
   );
@@ -203,7 +206,7 @@ export function SkippedMode({ listId, initialWords }: SkippedModeProps) {
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} onClick={goBack}>
-          ← Back
+          {t("back")}
         </Button>
         <Stack alignItems="flex-end" spacing={0.25}>
           <Typography variant="caption" color="text.secondary" fontWeight={600}>
@@ -221,7 +224,7 @@ export function SkippedMode({ listId, initialWords }: SkippedModeProps) {
       {step === 1 && (
         <StepImageCheck
           word={current}
-          hint="Попробуй ещё раз"
+          hint={t("tryAgain")}
           onHasImage={handleHasImage}
           onSkip={handleImageSkip}
         />

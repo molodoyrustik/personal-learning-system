@@ -10,17 +10,21 @@ import {
   DialogContentText,
   DialogTitle,
   IconButton,
+  Menu,
+  MenuItem,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import type { Course } from "@/entities/course";
 import type { Lesson } from "@/entities/lesson";
 import { deleteCourseAction } from "@/entities/course/api/course-actions";
-import { createLessonAction, deleteLessonAction } from "@/entities/lesson/api/lesson-actions";
+import { createLessonAction } from "@/entities/lesson/api/lesson-actions";
 
 type CourseDetailsProps = {
   course: Course;
@@ -29,23 +33,35 @@ type CourseDetailsProps = {
 
 export function CourseDetails({ course, lessons }: CourseDetailsProps) {
   const router = useRouter();
+  const t = useTranslations("Courses");
+  const tCommon = useTranslations("Common");
+
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const closeMenu = () => setMenuAnchor(null);
+
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
-  const [addingLesson, setAddingLesson] = useState(false);
+  const [addLessonOpen, setAddLessonOpen] = useState(false);
   const [lessonTitle, setLessonTitle] = useState("");
+  const [lessonPending, setLessonPending] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   async function handleAddLesson() {
-    const t = lessonTitle.trim();
-    if (!t) return;
-    await createLessonAction({ courseId: course.id, title: t });
-    setLessonTitle("");
-    setAddingLesson(false);
-    router.refresh();
+    const title = lessonTitle.trim();
+    if (!title || lessonPending) return;
+    setLessonPending(true);
+    try {
+      await createLessonAction({ courseId: course.id, title });
+      setLessonTitle("");
+      setAddLessonOpen(false);
+      router.refresh();
+    } finally {
+      setLessonPending(false);
+    }
   }
 
-  async function handleDeleteLesson(lessonId: string) {
-    await deleteLessonAction(lessonId, course.id);
-    router.refresh();
+  function handleAddLessonClose() {
+    setLessonTitle("");
+    setAddLessonOpen(false);
   }
 
   function handleDeleteConfirm() {
@@ -57,27 +73,57 @@ export function CourseDetails({ course, lessons }: CourseDetailsProps) {
 
   return (
     <Stack spacing={3}>
+      {/* Delete course dialog */}
       <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>
-        <DialogTitle>Delete course?</DialogTitle>
+        <DialogTitle>{t("deleteTitle")}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            This will permanently delete &quot;{course.title}&quot; and all its lessons. This action cannot be undone.
+            {t("deleteMessage", { title: course.title })}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteOpen(false)} disabled={isPending}>Cancel</Button>
+          <Button onClick={() => setDeleteOpen(false)} disabled={isPending}>
+            {tCommon("cancel")}
+          </Button>
           <Button color="error" onClick={handleDeleteConfirm} disabled={isPending}>
-            {isPending ? "Deleting…" : "Delete"}
+            {isPending ? tCommon("deleting") : tCommon("delete")}
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Add lesson dialog */}
+      <Dialog open={addLessonOpen} onClose={handleAddLessonClose} fullWidth maxWidth="xs">
+        <DialogTitle>{t("addLesson")}</DialogTitle>
+        <DialogContent>
+          <TextField
+            label={t("lessonTitleLabel")}
+            fullWidth
+            value={lessonTitle}
+            onChange={(e) => setLessonTitle(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAddLesson()}
+            autoFocus
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleAddLessonClose}>{tCommon("cancel")}</Button>
+          <Button
+            variant="contained"
+            onClick={handleAddLesson}
+            disabled={!lessonTitle.trim() || lessonPending}
+          >
+            {lessonPending ? tCommon("creating") : tCommon("add")}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Button
         variant="text"
         onClick={() => router.push("/courses")}
         size="small"
         sx={{ alignSelf: "flex-start" }}
       >
-        ← Courses
+        {t("backToCourses")}
       </Button>
 
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
@@ -89,90 +135,54 @@ export function CourseDetails({ course, lessons }: CourseDetailsProps) {
             </Typography>
           )}
         </Stack>
-        <Stack direction="row" spacing={1}>
-          <Button
-            size="small"
-            variant="outlined"
-            component={Link}
-            href={`/courses/${course.id}/edit`}
-          >
-            Edit
-          </Button>
-          <Button size="small" color="error" variant="outlined" onClick={() => setDeleteOpen(true)}>
-            Delete course
-          </Button>
-        </Stack>
+        <IconButton
+          onClick={(e) => setMenuAnchor(e.currentTarget)}
+          aria-label="More actions"
+          sx={{ color: "text.secondary" }}
+        >
+          <MoreVertIcon fontSize="small" />
+        </IconButton>
+        <Menu
+          anchorEl={menuAnchor}
+          open={Boolean(menuAnchor)}
+          onClose={closeMenu}
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+          transformOrigin={{ vertical: "top", horizontal: "right" }}
+        >
+          <MenuItem onClick={() => { closeMenu(); setAddLessonOpen(true); }}>
+            {t("addLesson")}
+          </MenuItem>
+          <MenuItem component={Link} href={`/courses/${course.id}/edit`} onClick={closeMenu}>
+            {tCommon("edit")}
+          </MenuItem>
+          <MenuItem onClick={() => { closeMenu(); setDeleteOpen(true); }} sx={{ color: "error.main" }}>
+            {tCommon("delete")}
+          </MenuItem>
+        </Menu>
       </Stack>
 
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography variant="h2">Lessons</Typography>
-        {!addingLesson && (
-          <Button variant="contained" size="small" onClick={() => setAddingLesson(true)}>
-            Add lesson
-          </Button>
-        )}
-      </Stack>
-
-      {addingLesson && (
-        <Card variant="outlined">
-          <CardContent>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <TextField
-                label="Lesson title"
-                size="small"
-                fullWidth
-                value={lessonTitle}
-                onChange={(e) => setLessonTitle(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddLesson()}
-                autoFocus
-              />
-              <Button variant="contained" onClick={handleAddLesson} disabled={!lessonTitle.trim()}>
-                Save
-              </Button>
-              <Button
-                variant="text"
-                onClick={() => {
-                  setAddingLesson(false);
-                  setLessonTitle("");
-                }}
-              >
-                Cancel
-              </Button>
-            </Stack>
-          </CardContent>
-        </Card>
-      )}
+      <Typography variant="h2">{t("lessonsSection")}</Typography>
 
       <Stack spacing={1.5}>
-        {lessons.length === 0 && !addingLesson && (
+        {lessons.length === 0 && (
           <Typography variant="body1" color="text.secondary">
-            No lessons yet. Add the first one.
+            {t("noLessonsYet")}
           </Typography>
         )}
         {lessons.map((lesson, idx) => (
           <Card key={lesson.id}>
             <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Link
-                  href={`/courses/${course.id}/lessons/${lesson.id}`}
-                  style={{ textDecoration: "none", color: "inherit", flex: 1 }}
-                >
-                  <Stack direction="row" spacing={1.5} alignItems="center">
-                    <Typography variant="body2" color="text.secondary" sx={{ minWidth: 24 }}>
-                      {idx + 1}.
-                    </Typography>
-                    <Typography variant="h3">{lesson.title}</Typography>
-                  </Stack>
-                </Link>
-                <IconButton
-                  size="small"
-                  color="error"
-                  onClick={() => handleDeleteLesson(lesson.id)}
-                  aria-label="Delete lesson"
-                >
-                  ✕
-                </IconButton>
-              </Stack>
+              <Link
+                href={`/courses/${course.id}/lessons/${lesson.id}`}
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <Typography variant="body2" color="text.secondary" sx={{ minWidth: 24 }}>
+                    {idx + 1}.
+                  </Typography>
+                  <Typography variant="h3">{lesson.title}</Typography>
+                </Stack>
+              </Link>
             </CardContent>
           </Card>
         ))}

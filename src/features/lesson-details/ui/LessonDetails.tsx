@@ -20,6 +20,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import type { List } from "@/entities/list";
 import type { Lesson } from "@/entities/lesson";
 import type { Pattern } from "@/entities/pattern";
@@ -40,6 +41,8 @@ type LessonDetailsProps = {
 
 export function LessonDetails({ courseId, lesson, allLists, allPatterns }: LessonDetailsProps) {
   const router = useRouter();
+  const t = useTranslations("Lessons");
+  const tCommon = useTranslations("Common");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -93,16 +96,16 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
   return (
     <Stack spacing={3}>
       <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>
-        <DialogTitle>Delete lesson?</DialogTitle>
+        <DialogTitle>{t("deleteTitle")}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            This will permanently delete &quot;{lesson.title}&quot;. This action cannot be undone.
+            {t("deleteMessage", { title: lesson.title })}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteOpen(false)} disabled={isPending}>Cancel</Button>
+          <Button onClick={() => setDeleteOpen(false)} disabled={isPending}>{tCommon("cancel")}</Button>
           <Button color="error" onClick={handleDeleteConfirm} disabled={isPending}>
-            {isPending ? "Deleting…" : "Delete"}
+            {isPending ? tCommon("deleting") : t("deleteLesson")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -113,7 +116,7 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
         size="small"
         sx={{ alignSelf: "flex-start" }}
       >
-        ← Course
+        {t("backToCourse")}
       </Button>
 
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
@@ -132,10 +135,10 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
             component={Link}
             href={`/courses/${courseId}/lessons/${lesson.id}/edit`}
           >
-            Edit
+            {tCommon("edit")}
           </Button>
           <Button size="small" color="error" variant="outlined" onClick={() => setDeleteOpen(true)}>
-            Delete lesson
+            {t("deleteLesson")}
           </Button>
         </Stack>
       </Stack>
@@ -145,14 +148,14 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
         <CardContent>
           <Stack spacing={2}>
             <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Typography variant="h3">Word Lists</Typography>
+              <Typography variant="h3">{t("wordLists")}</Typography>
               <Stack direction="row" spacing={1}>
                 <Button
                   variant="contained"
                   size="small"
                   onClick={() => router.push(`/lists/new?${lessonParams}`)}
                 >
-                  Create word list
+                  {t("createWordList")}
                 </Button>
                 {availableLists.length > 0 && (
                   <Button
@@ -160,7 +163,7 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
                     size="small"
                     onClick={() => setShowAttachList((v) => !v)}
                   >
-                    Attach existing
+                    {t("attachExisting")}
                   </Button>
                 )}
               </Stack>
@@ -169,10 +172,10 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
             {showAttachList && availableLists.length > 0 && (
               <Stack direction="row" spacing={1} alignItems="center">
                 <FormControl size="small" sx={{ flex: 1 }}>
-                  <InputLabel>Choose a list</InputLabel>
+                  <InputLabel>{t("chooseList")}</InputLabel>
                   <Select
                     value={selectedList}
-                    label="Choose a list"
+                    label={t("chooseList")}
                     onChange={(e) => setSelectedList(e.target.value)}
                   >
                     {availableLists.map((l) => (
@@ -188,7 +191,7 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
                   onClick={handleAttachList}
                   disabled={!selectedList}
                 >
-                  Attach
+                  {t("attach")}
                 </Button>
               </Stack>
             )}
@@ -209,7 +212,7 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
                       </Typography>
                     </Link>
                     <Button size="small" color="error" variant="text" onClick={() => handleRemoveList(list.id)}>
-                      Remove
+                      {tCommon("remove")}
                     </Button>
                   </Stack>
                 ))}
@@ -218,7 +221,7 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
 
             {attachedLists.length === 0 && !showAttachList && (
               <Typography variant="body2" color="text.secondary">
-                No word lists yet.
+                {t("noWordListsYet")}
               </Typography>
             )}
           </Stack>
@@ -230,14 +233,14 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
         <CardContent>
           <Stack spacing={2}>
             <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Typography variant="h3">Pattern Lists</Typography>
+              <Typography variant="h3">{t("patternLists")}</Typography>
               <Stack direction="row" spacing={1}>
                 <Button
                   variant="contained"
                   size="small"
                   onClick={() => router.push(`/patterns/new?${lessonParams}`)}
                 >
-                  Create pattern list
+                  {t("createPatternList")}
                 </Button>
                 {availablePatterns.length > 0 && (
                   <Button
@@ -245,7 +248,7 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
                     size="small"
                     onClick={() => setShowAttachPattern((v) => !v)}
                   >
-                    Attach existing
+                    {t("attachExisting")}
                   </Button>
                 )}
               </Stack>
@@ -254,10 +257,10 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
             {showAttachPattern && availablePatterns.length > 0 && (
               <Stack direction="row" spacing={1} alignItems="center">
                 <FormControl size="small" sx={{ flex: 1 }}>
-                  <InputLabel>Choose a pattern</InputLabel>
+                  <InputLabel>{t("choosePattern")}</InputLabel>
                   <Select
                     value={selectedPattern}
-                    label="Choose a pattern"
+                    label={t("choosePattern")}
                     onChange={(e) => setSelectedPattern(e.target.value)}
                   >
                     {availablePatterns.map((p) => (
@@ -273,7 +276,7 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
                   onClick={handleAttachPattern}
                   disabled={!selectedPattern}
                 >
-                  Attach
+                  {t("attach")}
                 </Button>
               </Stack>
             )}
@@ -294,7 +297,7 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
                       </Typography>
                     </Link>
                     <Button size="small" color="error" variant="text" onClick={() => handleRemovePattern(pattern.id)}>
-                      Remove
+                      {tCommon("remove")}
                     </Button>
                   </Stack>
                 ))}
@@ -303,7 +306,7 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
 
             {attachedPatterns.length === 0 && !showAttachPattern && (
               <Typography variant="body2" color="text.secondary">
-                No pattern lists yet.
+                {t("noPatternListsYet")}
               </Typography>
             )}
           </Stack>

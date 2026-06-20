@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef } from "react";
+import { useTranslations } from "next-intl";
 import type { PatternSentence } from "@/entities/pattern";
 import {
   addFullRunAction,
@@ -16,6 +17,7 @@ type FullPracticeModeProps = {
 };
 
 export function FullPracticeMode({ patternId, initialSentences }: FullPracticeModeProps) {
+  const t = useTranslations("PatternModes");
   const startTimeRef = useRef(Date.now());
 
   const sentences = useMemo(
@@ -35,8 +37,8 @@ export function FullPracticeMode({ patternId, initialSentences }: FullPracticeMo
       onCorrect={(id) => markSentenceCorrectAction(id, "full-practice")}
       onMistake={(id) => markSentenceMistakeAction(id)}
       onSessionComplete={handleSessionComplete}
-      emptyLabel="No learning sentences yet. Complete First Pass first."
-      completeLabel="Full run recorded. Check your progress below."
+      emptyLabel={t("noLearningSentences")}
+      completeLabel={t("fullRunRecorded")}
     />
   );
 }

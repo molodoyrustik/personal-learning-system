@@ -3,6 +3,7 @@
 import { Button, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import type { Word } from "@/entities/word/model/types";
 import {
   saveEncodingAction,
@@ -25,27 +26,29 @@ type SlowEncodeModeProps = {
 type Step = 1 | 2 | 3 | 4;
 
 function CompletionState({ empty, onBack, onNext }: { empty?: boolean; onBack: () => void; onNext?: () => void }) {
+  const t = useTranslations("WordModes");
   return (
     <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
       <Stack spacing={1} alignItems="center">
         <Typography variant="h2">
-          {empty ? "Slow Encode queue is empty" : "Slow Encode complete"}
+          {empty ? t("slowEncodeEmpty") : t("slowEncodeComplete")}
         </Typography>
         <Typography variant="body1" color="text.secondary" textAlign="center">
           {empty
-            ? "No words have reached Slow Encode yet."
-            : "All difficult words have been processed."}
+            ? t("noWordsSlowEncode")
+            : t("allDifficultProcessed")}
         </Typography>
       </Stack>
       <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 320 }}>
-        {!empty && onNext && <Button variant="contained" fullWidth onClick={onNext}>→ Recall Mode</Button>}
-        <Button variant="outlined" fullWidth onClick={onBack}>Back to list</Button>
+        {!empty && onNext && <Button variant="contained" fullWidth onClick={onNext}>{t("toRecallMode")}</Button>}
+        <Button variant="outlined" fullWidth onClick={onBack}>{t("backToList")}</Button>
       </Stack>
     </Stack>
   );
 }
 
 export function SlowEncodeMode({ listId, initialWords }: SlowEncodeModeProps) {
+  const t = useTranslations("WordModes");
   const [queue, setQueue] = useState<Word[]>(() =>
     initialWords.filter((w) => isInSlowEncodeQueue(w)),
   );
@@ -125,7 +128,7 @@ export function SlowEncodeMode({ listId, initialWords }: SlowEncodeModeProps) {
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} onClick={goBack}>
-          ← Back
+          {t("back")}
         </Button>
         <Stack alignItems="flex-end">
           <Typography variant="caption" color="text.secondary">
@@ -138,13 +141,13 @@ export function SlowEncodeMode({ listId, initialWords }: SlowEncodeModeProps) {
       </Stack>
 
       <Typography variant="body2" color="text.secondary" textAlign="center">
-        Используй словарь для поиска подходящей ассоциации
+        {t("useDictionary")}
       </Typography>
 
       {step === 1 && (
         <StepImageCheck
           word={current}
-          hint="Попробуй ещё раз — без таймера"
+          hint={t("tryAgainNoTimer")}
           onHasImage={handleHasImage}
           onSkip={handleImageSkip}
         />

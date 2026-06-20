@@ -14,6 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { generateId } from "@/shared/lib/ids";
 
 // ---------------------------------------------------------------------------
@@ -75,6 +76,8 @@ type ImportDrawerProps = {
 };
 
 export function ImportDrawer({ open, onClose, onImport }: ImportDrawerProps) {
+  const t = useTranslations("Import");
+  const tCommon = useTranslations("Common");
   const [raw, setRaw] = useState("");
   const [pairSep, setPairSep] = useState<PairSep>("dash");
   const [customPairSep, setCustomPairSep] = useState("");
@@ -105,22 +108,22 @@ export function ImportDrawer({ open, onClose, onImport }: ImportDrawerProps) {
           justifyContent="space-between"
           alignItems="center"
         >
-          <Typography variant="h2">Import words</Typography>
-          <IconButton onClick={onClose} size="small" aria-label="Close">
+          <Typography variant="h2">{t("importWords")}</Typography>
+          <IconButton onClick={onClose} size="small" aria-label={t("close")}>
             ✕
           </IconButton>
         </Stack>
 
         {/* Textarea */}
         <TextField
-          label="Paste words here"
+          label={t("pasteWordsHere")}
           multiline
           minRows={6}
           maxRows={12}
           fullWidth
           value={raw}
           onChange={(e) => setRaw(e.target.value)}
-          placeholder={"собака - dog\nкошка - cat"}
+          placeholder={"apple - яблоко\ncat - кошка"}
           slotProps={{
             input: { sx: { overflowY: "auto" } },
           }}
@@ -129,7 +132,7 @@ export function ImportDrawer({ open, onClose, onImport }: ImportDrawerProps) {
         {/* Pair separator */}
         <Stack spacing={1}>
           <Typography variant="body2" color="text.secondary">
-            Pair separator (source — target)
+            {t("pairSeparatorLabel")}
           </Typography>
           <Select
             value={pairSep}
@@ -137,14 +140,14 @@ export function ImportDrawer({ open, onClose, onImport }: ImportDrawerProps) {
             size="small"
             fullWidth
           >
-            <MenuItem value="dash">Dash ( - )</MenuItem>
-            <MenuItem value="comma">Comma ( , )</MenuItem>
-            <MenuItem value="custom">Custom</MenuItem>
+            <MenuItem value="dash">{t("dash")}</MenuItem>
+            <MenuItem value="comma">{t("comma")}</MenuItem>
+            <MenuItem value="custom">{tCommon("custom")}</MenuItem>
           </Select>
           {pairSep === "custom" && (
             <TextField
               size="small"
-              placeholder="Enter separator"
+              placeholder={tCommon("enterSeparator")}
               value={customPairSep}
               onChange={(e) => setCustomPairSep(e.target.value)}
               fullWidth
@@ -155,7 +158,7 @@ export function ImportDrawer({ open, onClose, onImport }: ImportDrawerProps) {
         {/* Item separator */}
         <Stack spacing={1}>
           <Typography variant="body2" color="text.secondary">
-            Item separator (between pairs)
+            {t("itemSeparatorLabel")}
           </Typography>
           <Select
             value={itemSep}
@@ -163,14 +166,14 @@ export function ImportDrawer({ open, onClose, onImport }: ImportDrawerProps) {
             size="small"
             fullWidth
           >
-            <MenuItem value="newline">New line</MenuItem>
-            <MenuItem value="semicolon">Semicolon ( ; )</MenuItem>
-            <MenuItem value="custom">Custom</MenuItem>
+            <MenuItem value="newline">{tCommon("newLine")}</MenuItem>
+            <MenuItem value="semicolon">{tCommon("semicolon")}</MenuItem>
+            <MenuItem value="custom">{tCommon("custom")}</MenuItem>
           </Select>
           {itemSep === "custom" && (
             <TextField
               size="small"
-              placeholder="Enter separator"
+              placeholder={tCommon("enterSeparator")}
               value={customItemSep}
               onChange={(e) => setCustomItemSep(e.target.value)}
               fullWidth
@@ -183,14 +186,14 @@ export function ImportDrawer({ open, onClose, onImport }: ImportDrawerProps) {
           <CardContent sx={{ py: 1.5 }}>
             <Stack spacing={0.5}>
               <Typography variant="caption" color="text.secondary">
-                Format: source {resolvedPairSep || "—"} target
+                {t("formatHint", { sep: resolvedPairSep || "—" })}
               </Typography>
               <Typography
                 variant="caption"
                 color="text.secondary"
                 sx={{ whiteSpace: "pre-line" }}
               >
-                {`Example:\nсобака${resolvedPairSep || "-"}dog\nкошка${resolvedPairSep || "-"}cat`}
+                {`Example:\napple${resolvedPairSep || "-"}яблоко\ncat${resolvedPairSep || "-"}кошка`}
               </Typography>
             </Stack>
           </CardContent>
@@ -199,11 +202,11 @@ export function ImportDrawer({ open, onClose, onImport }: ImportDrawerProps) {
         {/* Parsed preview */}
         <Stack spacing={1}>
           <Typography variant="body2" color="text.secondary">
-            Preview ({parsed.length} words)
+            {t("previewWords", { count: parsed.length })}
           </Typography>
           {parsed.length === 0 ? (
             <Typography variant="caption" color="text.secondary">
-              No valid words found
+              {t("noValidWords")}
             </Typography>
           ) : (
             <Stack
@@ -238,7 +241,7 @@ export function ImportDrawer({ open, onClose, onImport }: ImportDrawerProps) {
           disabled={parsed.length === 0}
           onClick={handleImport}
         >
-          Import {parsed.length > 0 ? `${parsed.length} words` : "words"}
+          {parsed.length > 0 ? t("importWordsCount", { count: parsed.length }) : t("importWordsFallback")}
         </Button>
       </Stack>
     </Drawer>

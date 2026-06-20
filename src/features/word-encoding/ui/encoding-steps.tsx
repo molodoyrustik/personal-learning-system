@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Button,
   Card,
@@ -6,6 +8,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { useTranslations } from "next-intl";
 import type { Word } from "@/entities/word/model/types";
 
 export function StepImageCheck({
@@ -19,6 +22,7 @@ export function StepImageCheck({
   onHasImage: () => void;
   onSkip: () => void;
 }) {
+  const t = useTranslations("WordModes");
   return (
     <>
       <Card>
@@ -33,7 +37,7 @@ export function StepImageCheck({
               {word.sourceText}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Представь это
+              {t("visualizeIt")}
             </Typography>
             {hint && (
               <Typography variant="caption" color="text.secondary">
@@ -45,10 +49,10 @@ export function StepImageCheck({
       </Card>
       <Stack spacing={1.5}>
         <Button variant="contained" fullWidth onClick={onHasImage}>
-          Есть образ
+          {t("gotIt")}
         </Button>
         <Button variant="text" fullWidth color="inherit" onClick={onSkip}>
-          Пропустить
+          {t("skip")}
         </Button>
       </Stack>
     </>
@@ -68,6 +72,7 @@ export function StepSoundEncoding({
   onNext: () => void;
   onSkip: () => void;
 }) {
+  const t = useTranslations("WordModes");
   return (
     <>
       <Card>
@@ -86,8 +91,8 @@ export function StepSoundEncoding({
               </Typography>
             </Stack>
             <TextField
-              label="Звуковая ассоциация"
-              placeholder="Введите ассоциацию"
+              label={t("soundAssociation")}
+              placeholder={t("enterAssociation")}
               value={value}
               onChange={(e) => onChange(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && value.trim() && onNext()}
@@ -104,10 +109,10 @@ export function StepSoundEncoding({
           onClick={onNext}
           disabled={!value.trim()}
         >
-          Next
+          {t("next")}
         </Button>
         <Button variant="text" fullWidth color="inherit" onClick={onSkip}>
-          Skip
+          {t("skip")}
         </Button>
       </Stack>
     </>
@@ -125,6 +130,7 @@ export function StepSceneCreation({
   onSave: () => void;
   onSkip: () => void;
 }) {
+  const t = useTranslations("WordModes");
   return (
     <>
       <Card>
@@ -135,11 +141,11 @@ export function StepSceneCreation({
               color="text.secondary"
               textAlign="center"
             >
-              Соедини два образа
+              {t("connectImages")}
             </Typography>
             <TextField
-              label="Сцена"
-              placeholder="Опиши сцену"
+              label={t("scene")}
+              placeholder={t("describeScene")}
               value={value}
               onChange={(e) => onChange(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && value.trim() && onSave()}
@@ -158,10 +164,10 @@ export function StepSceneCreation({
           onClick={onSave}
           disabled={!value.trim()}
         >
-          Save
+          {t("done2")}
         </Button>
         <Button variant="text" fullWidth color="inherit" onClick={onSkip}>
-          Skip
+          {t("skip")}
         </Button>
       </Stack>
     </>
@@ -179,6 +185,7 @@ export function StepFixation({
   sceneDescription: string;
   onDone: () => void;
 }) {
+  const t = useTranslations("WordModes");
   return (
     <>
       <Card>
@@ -192,13 +199,13 @@ export function StepFixation({
             </Stack>
             <Stack spacing={0.5}>
               <Typography variant="caption" color="text.secondary">
-                Ассоциация
+                {t("association")}
               </Typography>
               <Typography variant="body1">{soundAssociation}</Typography>
             </Stack>
             <Stack spacing={0.5}>
               <Typography variant="caption" color="text.secondary">
-                Сцена
+                {t("scene")}
               </Typography>
               <Typography variant="body1">{sceneDescription}</Typography>
             </Stack>
@@ -207,13 +214,13 @@ export function StepFixation({
               color="text.secondary"
               textAlign="center"
             >
-              Посмотри и проговори слово
+              {t("lookAndSay")}
             </Typography>
           </Stack>
         </CardContent>
       </Card>
       <Button variant="contained" fullWidth onClick={onDone}>
-        Done
+        {t("done")}
       </Button>
     </>
   );

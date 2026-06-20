@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { LanguageCode } from "@/entities/list";
 import { ImportDrawer, type ImportedWord } from "@/features/import-words";
 import { createListWithWords } from "@/features/add-new-list/actions";
@@ -25,10 +26,7 @@ import { generateId } from "@/shared/lib/ids";
 
 type PreviewWord = { id: string; sourceText: string; targetText: string };
 
-const LANGUAGE_LABELS: Record<LanguageCode, string> = {
-  ru: "Russian",
-  en: "English",
-};
+// LANGUAGE_LABELS built inside component using t()
 
 function makePreviewWord(sourceText: string, targetText: string): PreviewWord {
   return { id: generateId(), sourceText, targetText };
@@ -46,6 +44,14 @@ type AddNewListProps = {
 
 export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
   const router = useRouter();
+  const t = useTranslations("Lists");
+  const tCommon = useTranslations("Common");
+
+  const LANGUAGE_LABELS: Record<LanguageCode, string> = {
+    ru: t("russian"),
+    en: t("english"),
+  };
+
   const fromLesson = !!(lessonId && courseId);
 
   const [name, setName] = useState("");
@@ -124,18 +130,18 @@ export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
                 : router.push("/lists")
             }
           >
-            {fromLesson ? "← Back to lesson" : "← Back to Lists"}
+            {fromLesson ? t("backToLesson") : t("backToLists")}
           </Button>
-          <Typography variant="h1">Create list</Typography>
+          <Typography variant="h1">{t("createList")}</Typography>
         </Stack>
 
         <Card>
           <CardContent>
             <Stack spacing={2}>
-              <Typography variant="h3">List info</Typography>
+              <Typography variant="h3">{t("listInfo")}</Typography>
               <TextField
-                label="List name"
-                placeholder="e.g. Travel Vocabulary"
+                label={t("listName")}
+                placeholder={t("listNamePlaceholder")}
                 fullWidth
                 required
                 value={name}
@@ -143,8 +149,8 @@ export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
                 autoFocus
               />
               <TextField
-                label="Description (optional)"
-                placeholder="What is this list about?"
+                label={t("descriptionLabel")}
+                placeholder={t("descriptionPlaceholder")}
                 fullWidth
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -153,33 +159,33 @@ export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
               />
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                 <FormControl fullWidth size="small">
-                  <InputLabel id="source-lang-label">Source language</InputLabel>
+                  <InputLabel id="source-lang-label">{t("sourceLanguage")}</InputLabel>
                   <Select
                     labelId="source-lang-label"
-                    label="Source language"
+                    label={t("sourceLanguage")}
                     value={sourceLanguage}
                     onChange={(e) => setSourceLanguage(e.target.value as LanguageCode)}
                   >
-                    <MenuItem value="ru">Russian (ru)</MenuItem>
-                    <MenuItem value="en">English (en)</MenuItem>
+                    <MenuItem value="ru">{t("russian")}</MenuItem>
+                    <MenuItem value="en">{t("english")}</MenuItem>
                   </Select>
                 </FormControl>
                 <FormControl fullWidth size="small">
-                  <InputLabel id="target-lang-label">Target language</InputLabel>
+                  <InputLabel id="target-lang-label">{t("targetLanguage")}</InputLabel>
                   <Select
                     labelId="target-lang-label"
-                    label="Target language"
+                    label={t("targetLanguage")}
                     value={targetLanguage}
                     onChange={(e) => setTargetLanguage(e.target.value as LanguageCode)}
                   >
-                    <MenuItem value="ru">Russian (ru)</MenuItem>
-                    <MenuItem value="en">English (en)</MenuItem>
+                    <MenuItem value="ru">{t("russian")}</MenuItem>
+                    <MenuItem value="en">{t("english")}</MenuItem>
                   </Select>
                 </FormControl>
               </Stack>
               {!languagesValid && (
                 <Typography variant="caption" color="text.secondary">
-                  Source and target language must be different.
+                  {t("languageError")}
                 </Typography>
               )}
             </Stack>
@@ -190,15 +196,15 @@ export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
           <CardContent>
             <Stack spacing={2}>
               <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Typography variant="h3">Words</Typography>
+                <Typography variant="h3">{t("wordsSection")}</Typography>
                 <Button variant="outlined" size="small" onClick={() => setDrawerOpen(true)}>
-                  + Import
+                  {t("importWords")}
                 </Button>
               </Stack>
               <Stack direction="row" spacing={1} alignItems="flex-start">
                 <TextField
                   inputRef={sourceInputRef}
-                  label={`${LANGUAGE_LABELS[sourceLanguage]} word`}
+                  label={`${LANGUAGE_LABELS[sourceLanguage]}`}
                   placeholder="…"
                   size="small"
                   fullWidth
@@ -207,7 +213,7 @@ export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
                   onKeyDown={(e) => e.key === "Enter" && handleAddWord()}
                 />
                 <TextField
-                  label={`${LANGUAGE_LABELS[targetLanguage]} word`}
+                  label={`${LANGUAGE_LABELS[targetLanguage]}`}
                   placeholder="…"
                   size="small"
                   fullWidth
@@ -221,12 +227,12 @@ export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
                   disabled={!manualSourceText.trim() || !manualTargetText.trim()}
                   sx={{ flexShrink: 0, whiteSpace: "nowrap" }}
                 >
-                  Add
+                  {tCommon("add")}
                 </Button>
               </Stack>
               {words.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">
-                  No words yet. Add manually or import.
+                  {t("noWordsYet")}
                 </Typography>
               ) : (
                 <>
@@ -249,7 +255,7 @@ export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
                         <IconButton
                           size="small"
                           onClick={() => handleRemoveWord(word.id)}
-                          aria-label="Remove word"
+                          aria-label={tCommon("remove")}
                         >
                           ✕
                         </IconButton>
@@ -257,7 +263,7 @@ export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
                     ))}
                   </Stack>
                   <Typography variant="caption" color="text.secondary">
-                    {words.length} {words.length === 1 ? "word" : "words"} added
+                    {t("wordAdded", { count: words.length })}
                   </Typography>
                 </>
               )}
@@ -271,7 +277,7 @@ export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
           disabled={!canCreate || loading}
           onClick={handleCreate}
         >
-          {loading ? "Creating…" : "Create list"}
+          {loading ? tCommon("creating") : t("createList")}
         </Button>
       </Stack>
 

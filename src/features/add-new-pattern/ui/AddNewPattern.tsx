@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   ImportSentencesDrawer,
   type ImportedSentence,
@@ -37,6 +38,8 @@ type AddNewPatternProps = {
 
 export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
   const router = useRouter();
+  const t = useTranslations("Patterns");
+  const tCommon = useTranslations("Common");
   const fromLesson = !!(lessonId && courseId);
 
   const [name, setName] = useState("");
@@ -110,18 +113,18 @@ export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
                 : router.push("/patterns")
             }
           >
-            {fromLesson ? "← Back to lesson" : "← Back to Patterns"}
+            {fromLesson ? t("backToLesson") : t("backToPatterns")}
           </Button>
-          <Typography variant="h1">Create pattern</Typography>
+          <Typography variant="h1">{t("newPattern")}</Typography>
         </Stack>
 
         <Card>
           <CardContent>
             <Stack spacing={2}>
-              <Typography variant="h3">Pattern info</Typography>
+              <Typography variant="h3">{t("patternInfo")}</Typography>
               <TextField
-                label="Pattern name"
-                placeholder="e.g. Present Simple"
+                label={t("patternName")}
+                placeholder={t("patternNamePlaceholder")}
                 fullWidth
                 required
                 value={name}
@@ -129,8 +132,8 @@ export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
                 autoFocus
               />
               <TextField
-                label="Description (optional)"
-                placeholder="What grammar structure does this pattern cover?"
+                label={t("descriptionLabel")}
+                placeholder={t("descriptionPlaceholder")}
                 fullWidth
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -145,16 +148,16 @@ export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
           <CardContent>
             <Stack spacing={2}>
               <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Typography variant="h3">Sentences</Typography>
+                <Typography variant="h3">{t("sentencesSection")}</Typography>
                 <Button variant="outlined" size="small" onClick={() => setDrawerOpen(true)}>
-                  + Import
+                  {t("importSentences")}
                 </Button>
               </Stack>
               <Stack spacing={1}>
                 <TextField
                   inputRef={sourceInputRef}
-                  label="Russian sentence"
-                  placeholder="Я иду в магазин"
+                  label={t("sourceSentence")}
+                  placeholder={t("sourceSentencePlaceholder")}
                   size="small"
                   fullWidth
                   value={manualSource}
@@ -163,8 +166,8 @@ export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
                 />
                 <Stack direction="row" spacing={1}>
                   <TextField
-                    label="English sentence"
-                    placeholder="I go to the store"
+                    label={t("englishSentence")}
+                    placeholder={t("sourceSentencePlaceholder")}
                     size="small"
                     fullWidth
                     value={manualTarget}
@@ -177,13 +180,13 @@ export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
                     disabled={!manualSource.trim() || !manualTarget.trim()}
                     sx={{ flexShrink: 0 }}
                   >
-                    Add
+                    {tCommon("add")}
                   </Button>
                 </Stack>
               </Stack>
               {sentences.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">
-                  No sentences yet. Add manually or import.
+                  {t("noSentencesAdd")}
                 </Typography>
               ) : (
                 <>
@@ -207,7 +210,7 @@ export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
                         <IconButton
                           size="small"
                           onClick={() => handleRemoveSentence(s.id)}
-                          aria-label="Remove sentence"
+                          aria-label={tCommon("remove")}
                         >
                           ✕
                         </IconButton>
@@ -215,7 +218,7 @@ export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
                     ))}
                   </Stack>
                   <Typography variant="caption" color="text.secondary">
-                    {sentences.length} {sentences.length === 1 ? "sentence" : "sentences"} added
+                    {t("sentenceAdded", { count: sentences.length })}
                   </Typography>
                 </>
               )}
@@ -229,7 +232,7 @@ export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
           disabled={!canCreate || loading}
           onClick={handleCreate}
         >
-          {loading ? "Creating…" : "Create pattern"}
+          {loading ? tCommon("creating") : t("newPattern")}
         </Button>
       </Stack>
 

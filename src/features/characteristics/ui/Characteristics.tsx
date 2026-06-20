@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { Characteristic } from "@/entities/characteristic";
 import {
   createCharacteristicAction,
@@ -53,6 +54,8 @@ type CharacteristicsProps = {
 
 export function Characteristics({ characteristics }: CharacteristicsProps) {
   const router = useRouter();
+  const t = useTranslations("Characteristics");
+  const tCommon = useTranslations("Common");
 
   const [quickKey, setQuickKey] = useState("");
   const [quickDescription, setQuickDescription] = useState("");
@@ -108,13 +111,13 @@ export function Characteristics({ characteristics }: CharacteristicsProps) {
           flexWrap="wrap"
           gap={1}
         >
-          <Typography variant="h1">Characteristics</Typography>
+          <Typography variant="h1">{t("title")}</Typography>
           <Stack direction="row" spacing={1} flexWrap="wrap">
             <Button variant="outlined" onClick={() => setDrawerOpen(true)}>
-              Import
+              {t("import")}
             </Button>
             <Button component={Link} href="/characteristics/new" variant="contained">
-              Add characteristic
+              {t("addCharacteristic")}
             </Button>
           </Stack>
         </Stack>
@@ -123,11 +126,11 @@ export function Characteristics({ characteristics }: CharacteristicsProps) {
           <CardContent>
             <Stack spacing={1.5}>
               <Typography variant="body2" color="text.secondary">
-                Quick add
+                {t("quickAdd")}
               </Typography>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems="flex-start">
                 <TextField
-                  label="Key"
+                  label={t("key")}
                   size="small"
                   value={quickKey}
                   onChange={(e) => setQuickKey(e.target.value)}
@@ -135,7 +138,7 @@ export function Characteristics({ characteristics }: CharacteristicsProps) {
                   sx={{ width: 140, flexShrink: 0 }}
                 />
                 <TextField
-                  label="Description / image"
+                  label={t("description")}
                   size="small"
                   fullWidth
                   value={quickDescription}
@@ -148,7 +151,7 @@ export function Characteristics({ characteristics }: CharacteristicsProps) {
                   disabled={!canQuickAdd}
                   sx={{ flexShrink: 0 }}
                 >
-                  Add
+                  {tCommon("add")}
                 </Button>
               </Stack>
             </Stack>
@@ -157,7 +160,7 @@ export function Characteristics({ characteristics }: CharacteristicsProps) {
 
         {characteristics.length === 0 ? (
           <Typography variant="body1" color="text.secondary">
-            No characteristics yet.
+            {t("noCharacteristicsYet")}
           </Typography>
         ) : (
           <Stack spacing={2}>
@@ -188,7 +191,7 @@ export function Characteristics({ characteristics }: CharacteristicsProps) {
                         size="small"
                         variant="outlined"
                       >
-                        Edit
+                        {tCommon("edit")}
                       </Button>
                       <Button
                         size="small"
@@ -196,7 +199,7 @@ export function Characteristics({ characteristics }: CharacteristicsProps) {
                         variant="outlined"
                         onClick={() => handleDelete(c.id)}
                       >
-                        Delete
+                        {tCommon("delete")}
                       </Button>
                     </Stack>
                   </Stack>
@@ -215,14 +218,14 @@ export function Characteristics({ characteristics }: CharacteristicsProps) {
       >
         <Stack spacing={3} sx={{ height: "100%", overflowY: "auto" }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography variant="h2">Add characteristics</Typography>
+            <Typography variant="h2">{t("addCharacteristicsBtn")}</Typography>
             <IconButton size="small" onClick={() => setDrawerOpen(false)} aria-label="Close">
               ✕
             </IconButton>
           </Stack>
 
           <TextField
-            label="Paste keys"
+            label={t("pasteKeys")}
             multiline
             minRows={6}
             fullWidth
@@ -233,7 +236,7 @@ export function Characteristics({ characteristics }: CharacteristicsProps) {
 
           <Stack spacing={1}>
             <Typography variant="body2" color="text.secondary">
-              Separator between items
+              {t("separatorBetweenItems")}
             </Typography>
             <Select
               value={itemSep}
@@ -241,15 +244,15 @@ export function Characteristics({ characteristics }: CharacteristicsProps) {
               size="small"
               fullWidth
             >
-              <MenuItem value="newline">New line</MenuItem>
-              <MenuItem value="comma">Comma (,)</MenuItem>
-              <MenuItem value="semicolon">Semicolon (;)</MenuItem>
-              <MenuItem value="custom">Custom</MenuItem>
+              <MenuItem value="newline">{tCommon("newLine")}</MenuItem>
+              <MenuItem value="comma">{t("comma")}</MenuItem>
+              <MenuItem value="semicolon">{t("semicolon")}</MenuItem>
+              <MenuItem value="custom">{tCommon("custom")}</MenuItem>
             </Select>
             {itemSep === "custom" && (
               <TextField
                 size="small"
-                placeholder="Separator"
+                placeholder={t("separator")}
                 value={customItemSep}
                 onChange={(e) => setCustomItemSep(e.target.value)}
                 fullWidth
@@ -259,11 +262,11 @@ export function Characteristics({ characteristics }: CharacteristicsProps) {
 
           <Stack spacing={1}>
             <Typography variant="body2" color="text.secondary">
-              Preview ({previewKeys.length} new)
+              {t("pasteKeys")} ({previewKeys.length})
             </Typography>
             {previewKeys.length === 0 ? (
               <Typography variant="caption" color="text.secondary">
-                No new keys to add
+                {t("noNewKeys")}
               </Typography>
             ) : (
               <Stack
@@ -283,7 +286,7 @@ export function Characteristics({ characteristics }: CharacteristicsProps) {
           <Stack sx={{ flex: 1 }} />
 
           <Button variant="contained" fullWidth disabled={!canImport} onClick={handleBulkImport}>
-            Add characteristics
+            {t("addCharacteristicsBtn")}
           </Button>
         </Stack>
       </Drawer>

@@ -3,6 +3,7 @@
 import { Button, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { Word } from "@/entities/word/model/types";
 import {
   saveEncodingAction,
@@ -36,34 +37,36 @@ function CompletionState({ empty, outcomes, onBack, onGoToSkipped, onGoToRecall 
   onGoToSkipped: () => void;
   onGoToRecall: () => void;
 }) {
+  const t = useTranslations("WordModes");
   const hasSkipped = outcomes.skipped > 0;
   const hasEncoded = outcomes.encoded > 0;
   return (
     <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
       <Stack spacing={1} alignItems="center">
         <Typography variant="h2">
-          {empty ? "Nothing to encode" : "Encoding complete"}
+          {empty ? t("nothingToEncode") : t("encodingComplete")}
         </Typography>
         <Typography variant="body1" color="text.secondary" textAlign="center">
           {empty
-            ? "There are no selected words in this list."
-            : `${outcomes.encoded} encoded · ${outcomes.skipped} skipped`}
+            ? t("noSelectedWords")
+            : `${outcomes.encoded} ${t("encoded")} · ${outcomes.skipped} ${t("skip")}`}
         </Typography>
       </Stack>
       <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 320 }}>
         {!empty && hasSkipped && (
-          <Button variant="contained" fullWidth onClick={onGoToSkipped}>→ Skipped Mode</Button>
+          <Button variant="contained" fullWidth onClick={onGoToSkipped}>{t("toSkippedMode")}</Button>
         )}
         {!empty && !hasSkipped && hasEncoded && (
-          <Button variant="contained" fullWidth onClick={onGoToRecall}>→ Recall Mode</Button>
+          <Button variant="contained" fullWidth onClick={onGoToRecall}>{t("toRecallMode")}</Button>
         )}
-        <Button variant="outlined" fullWidth onClick={onBack}>Back to list</Button>
+        <Button variant="outlined" fullWidth onClick={onBack}>{t("backToList")}</Button>
       </Stack>
     </Stack>
   );
 }
 
 export function EncodingMode({ listId, initialWords }: EncodingModeProps) {
+  const t = useTranslations("WordModes");
   const [queue, setQueue] = useState<Word[]>(() =>
     initialWords.filter((w) => w.status === "selected"),
   );
@@ -181,7 +184,7 @@ export function EncodingMode({ listId, initialWords }: EncodingModeProps) {
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} onClick={goBack}>
-          ← Back
+          {t("back")}
         </Button>
         <Stack alignItems="flex-end" spacing={0.25}>
           <Typography variant="caption" color="text.secondary" fontWeight={600}>

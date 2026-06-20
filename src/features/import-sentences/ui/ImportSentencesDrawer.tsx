@@ -14,6 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { generateId } from "@/shared/lib/ids";
 
 // ---------------------------------------------------------------------------
@@ -79,6 +80,8 @@ export function ImportSentencesDrawer({
   onClose,
   onImport,
 }: ImportSentencesDrawerProps) {
+  const t = useTranslations("Import");
+  const tCommon = useTranslations("Common");
   const [raw, setRaw] = useState("");
   const [pairSep, setPairSep] = useState<PairSep>("pipe");
   const [customPairSep, setCustomPairSep] = useState("");
@@ -109,22 +112,22 @@ export function ImportSentencesDrawer({
           justifyContent="space-between"
           alignItems="center"
         >
-          <Typography variant="h2">Import sentences</Typography>
-          <IconButton onClick={onClose} size="small" aria-label="Close">
+          <Typography variant="h2">{t("importSentences")}</Typography>
+          <IconButton onClick={onClose} size="small" aria-label={t("close")}>
             ✕
           </IconButton>
         </Stack>
 
         {/* Textarea */}
         <TextField
-          label="Paste sentences here"
+          label={t("pasteSentencesHere")}
           multiline
           minRows={6}
           maxRows={12}
           fullWidth
           value={raw}
           onChange={(e) => setRaw(e.target.value)}
-          placeholder={"Я иду в магазин | I go to the store\nОн работает каждый день | He works every day"}
+          placeholder={"I go to the store | Я иду в магазин\nHe works every day | Он работает каждый день"}
           slotProps={{
             input: { sx: { overflowY: "auto" } },
           }}
@@ -133,7 +136,7 @@ export function ImportSentencesDrawer({
         {/* Pair separator */}
         <Stack spacing={1}>
           <Typography variant="body2" color="text.secondary">
-            Separator between RU and EN
+            {t("separatorSourceTarget")}
           </Typography>
           <Select
             value={pairSep}
@@ -141,14 +144,14 @@ export function ImportSentencesDrawer({
             size="small"
             fullWidth
           >
-            <MenuItem value="pipe">Pipe ( | )</MenuItem>
-            <MenuItem value="dash">Dash ( - )</MenuItem>
-            <MenuItem value="custom">Custom</MenuItem>
+            <MenuItem value="pipe">{t("pipe")}</MenuItem>
+            <MenuItem value="dash">{t("dash")}</MenuItem>
+            <MenuItem value="custom">{tCommon("custom")}</MenuItem>
           </Select>
           {pairSep === "custom" && (
             <TextField
               size="small"
-              placeholder="Enter separator"
+              placeholder={tCommon("enterSeparator")}
               value={customPairSep}
               onChange={(e) => setCustomPairSep(e.target.value)}
               fullWidth
@@ -159,7 +162,7 @@ export function ImportSentencesDrawer({
         {/* Item separator */}
         <Stack spacing={1}>
           <Typography variant="body2" color="text.secondary">
-            Separator between sentences
+            {t("separatorBetweenSentences")}
           </Typography>
           <Select
             value={itemSep}
@@ -167,14 +170,14 @@ export function ImportSentencesDrawer({
             size="small"
             fullWidth
           >
-            <MenuItem value="newline">New line</MenuItem>
-            <MenuItem value="semicolon">Semicolon ( ; )</MenuItem>
-            <MenuItem value="custom">Custom</MenuItem>
+            <MenuItem value="newline">{tCommon("newLine")}</MenuItem>
+            <MenuItem value="semicolon">{tCommon("semicolon")}</MenuItem>
+            <MenuItem value="custom">{tCommon("custom")}</MenuItem>
           </Select>
           {itemSep === "custom" && (
             <TextField
               size="small"
-              placeholder="Enter separator"
+              placeholder={tCommon("enterSeparator")}
               value={customItemSep}
               onChange={(e) => setCustomItemSep(e.target.value)}
               fullWidth
@@ -187,14 +190,14 @@ export function ImportSentencesDrawer({
           <CardContent sx={{ py: 1.5 }}>
             <Stack spacing={0.5}>
               <Typography variant="caption" color="text.secondary">
-                Format: RU sentence {resolvedPairSep.trim() || "—"} EN sentence
+                {t("formatHint", { sep: resolvedPairSep.trim() || "—" })}
               </Typography>
               <Typography
                 variant="caption"
                 color="text.secondary"
                 sx={{ whiteSpace: "pre-line" }}
               >
-                {`Example:\nЯ иду в магазин${resolvedPairSep}I go to the store`}
+                {`Example:\nI go to the store${resolvedPairSep}Я иду в магазин`}
               </Typography>
             </Stack>
           </CardContent>
@@ -203,11 +206,11 @@ export function ImportSentencesDrawer({
         {/* Preview */}
         <Stack spacing={1}>
           <Typography variant="body2" color="text.secondary">
-            Preview ({parsed.length} sentences)
+            {t("previewSentences", { count: parsed.length })}
           </Typography>
           {parsed.length === 0 ? (
             <Typography variant="caption" color="text.secondary">
-              No valid sentences found
+              {t("noValidSentences")}
             </Typography>
           ) : (
             <Stack
@@ -237,7 +240,7 @@ export function ImportSentencesDrawer({
           disabled={parsed.length === 0}
           onClick={handleImport}
         >
-          Import {parsed.length > 0 ? `${parsed.length} sentences` : "sentences"}
+          {parsed.length > 0 ? t("importSentencesCount", { count: parsed.length }) : t("importSentencesFallback")}
         </Button>
       </Stack>
     </Drawer>

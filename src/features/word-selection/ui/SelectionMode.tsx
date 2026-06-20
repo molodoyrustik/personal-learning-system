@@ -3,6 +3,7 @@
 import { Button, Card, CardContent, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import type { Word } from "@/entities/word/model/types";
 import { selectWordAction, rejectWordAction } from "@/entities/word/api/word-actions";
 
@@ -13,6 +14,7 @@ type SelectionModeProps = {
 
 export function SelectionMode({ listId, initialWords }: SelectionModeProps) {
   const router = useRouter();
+  const t = useTranslations("WordModes");
   function goBack() { router.refresh(); router.push(`/lists/${listId}`); }
 
   const [queue, setQueue] = useState<Word[]>(() =>
@@ -48,12 +50,12 @@ export function SelectionMode({ listId, initialWords }: SelectionModeProps) {
     return (
       <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
         <Stack spacing={1} alignItems="center">
-          <Typography variant="h2">Nothing to select</Typography>
+          <Typography variant="h2">{t("nothingToSelect")}</Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center">
-            There are no new words in this list.
+            {t("noNewWords")}
           </Typography>
         </Stack>
-        <Button variant="outlined" onClick={goBack}>Back to list</Button>
+        <Button variant="outlined" onClick={goBack}>{t("backToList")}</Button>
       </Stack>
     );
   }
@@ -62,14 +64,14 @@ export function SelectionMode({ listId, initialWords }: SelectionModeProps) {
     return (
       <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
         <Stack spacing={1} alignItems="center">
-          <Typography variant="h2">Selection complete</Typography>
+          <Typography variant="h2">{t("selectionComplete")}</Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center">
-            All new words in this list have been processed.
+            {t("allWordsProcessed")}
           </Typography>
         </Stack>
         <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 320 }}>
-          <Button variant="contained" fullWidth onClick={goToEncoding}>→ Encoding Mode</Button>
-          <Button variant="outlined" fullWidth onClick={goBack}>Back to list</Button>
+          <Button variant="contained" fullWidth onClick={goToEncoding}>{t("toEncodingMode")}</Button>
+          <Button variant="outlined" fullWidth onClick={goBack}>{t("backToList")}</Button>
         </Stack>
       </Stack>
     );
@@ -79,10 +81,10 @@ export function SelectionMode({ listId, initialWords }: SelectionModeProps) {
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} onClick={goBack}>
-          ← Back
+          {t("back")}
         </Button>
         <Typography variant="caption" color="text.secondary">
-          {processed} / {total} done
+          {processed} / {total}
         </Typography>
       </Stack>
 
@@ -98,13 +100,13 @@ export function SelectionMode({ listId, initialWords }: SelectionModeProps) {
 
       <Stack spacing={1.5}>
         <Button variant="contained" fullWidth onClick={handleNeedToLearn}>
-          Need to learn
+          {t("needToLearn")}
         </Button>
         <Button variant="outlined" fullWidth onClick={handleAlreadyKnow}>
-          I know
+          {t("iKnow")}
         </Button>
         <Button variant="text" fullWidth onClick={handleSkip} color="inherit">
-          Skip
+          {t("skip")}
         </Button>
       </Stack>
     </Stack>

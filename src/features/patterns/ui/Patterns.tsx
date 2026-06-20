@@ -11,6 +11,7 @@ import {
   Typography,
 } from "@mui/material";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type { Pattern } from "@/entities/pattern";
 
 type PatternsProps = {
@@ -19,19 +20,21 @@ type PatternsProps = {
 };
 
 export function Patterns({ patterns, sentenceCounts }: PatternsProps) {
+  const t = useTranslations("Patterns");
+
   return (
     <Container sx={{ py: 4 }}>
       <Stack spacing={3}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Typography variant="h1">Patterns</Typography>
+          <Typography variant="h1">{t("title")}</Typography>
           <Button component={Link} href="/patterns/new" variant="contained">
-            New pattern
+            {t("newPattern")}
           </Button>
         </Stack>
 
         {patterns.length === 0 ? (
           <Typography variant="body1" color="text.secondary">
-            No patterns yet. Create one to start practicing grammar.
+            {t("noPatternsYet")}
           </Typography>
         ) : (
           <Stack spacing={2}>
@@ -56,7 +59,7 @@ export function Patterns({ patterns, sentenceCounts }: PatternsProps) {
                           )}
                         </Stack>
                         <Chip
-                          label={`${count} ${count === 1 ? "sentence" : "sentences"}`}
+                          label={`${count} ${count === 1 ? t("sentence") : t("sentences")}`}
                           size="small"
                           variant="outlined"
                         />

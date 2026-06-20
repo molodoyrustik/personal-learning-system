@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { markReviewResultAction } from "@/entities/word/api/word-actions";
 
 type ReviewWord = {
@@ -28,6 +29,7 @@ type DailyReviewProps = {
 
 export function DailyReview({ listId, initialWords }: DailyReviewProps) {
   const router = useRouter();
+  const t = useTranslations("WordModes");
   const [queue, setQueue] = useState<ReviewWord[]>(initialWords);
   const [isAnswerVisible, setIsAnswerVisible] = useState(false);
   const [doneCount, setDoneCount] = useState(0);
@@ -57,13 +59,13 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
     return (
       <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
         <Stack spacing={1} alignItems="center">
-          <Typography variant="h2">No words to review</Typography>
+          <Typography variant="h2">{t("noWordsToReview")}</Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center">
-            All caught up! Come back later when words are due.
+            {t("allCaughtUp")}
           </Typography>
         </Stack>
         <Button variant="outlined" onClick={() => { router.refresh(); router.push(`/lists/${listId}`); }}>
-          Back to list
+          {t("backToList")}
         </Button>
       </Stack>
     );
@@ -73,13 +75,13 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
     return (
       <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
         <Stack spacing={1} alignItems="center">
-          <Typography variant="h2">Review complete</Typography>
+          <Typography variant="h2">{t("reviewComplete")}</Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center">
-            You reviewed {doneCount} {doneCount === 1 ? "word" : "words"} today.
+            {t("youReviewed", { count: doneCount, unit: doneCount === 1 ? t("word") : t("wordsUnit") })}
           </Typography>
         </Stack>
         <Button variant="outlined" onClick={() => { router.refresh(); router.push(`/lists/${listId}`); }}>
-          Back to list
+          {t("backToList")}
         </Button>
       </Stack>
     );
@@ -88,7 +90,7 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
   return (
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography variant="h1">Daily Review</Typography>
+        <Typography variant="h1">{t("dailyReview")}</Typography>
         <Typography variant="caption" color="text.secondary">
           {doneCount + 1} / {total}
         </Typography>
@@ -107,20 +109,20 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
               <>
                 <Divider />
                 <Stack spacing={0.5}>
-                  <Typography variant="caption" color="text.secondary">Сцена</Typography>
+                  <Typography variant="caption" color="text.secondary">{t("scene")}</Typography>
                   <Typography variant="body1">{current.scene_description}</Typography>
                 </Stack>
               </>
             )}
             {current.sound_association && (
               <Stack spacing={0.5}>
-                <Typography variant="caption" color="text.secondary">Ассоциация</Typography>
+                <Typography variant="caption" color="text.secondary">{t("association")}</Typography>
                 <Typography variant="body1">{current.sound_association}</Typography>
               </Stack>
             )}
 
             <Typography variant="body2" color="text.secondary" textAlign="center">
-              Какое это слово?
+              {t("whatIsThisWord")}
             </Typography>
 
             {isAnswerVisible && (
@@ -139,15 +141,15 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
 
       {!isAnswerVisible ? (
         <Button variant="contained" fullWidth onClick={() => setIsAnswerVisible(true)}>
-          Show Answer
+          {t("showAnswer")}
         </Button>
       ) : (
         <Stack spacing={1.5}>
           <Button variant="contained" fullWidth onClick={handleRemembered}>
-            Remembered
+            {t("remembered")}
           </Button>
           <Button variant="outlined" fullWidth onClick={handleForgot}>
-            Forgot
+            {t("forgot")}
           </Button>
         </Stack>
       )}

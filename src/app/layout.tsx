@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import { createClient } from "@/shared/lib/supabase/server";
 import { AppTopNav } from "@/shared/ui/AppTopNav";
 import { Providers } from "./providers";
@@ -29,14 +31,18 @@ export default async function RootLayout({
 }>) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  const locale = await getLocale();
+  const messages = await getMessages();
 
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body className={inter.className}>
-        <Providers>
-          <AppTopNav isAuthenticated={!!user} />
-          {children}
-        </Providers>
+        <NextIntlClientProvider messages={messages}>
+          <Providers>
+            <AppTopNav isAuthenticated={!!user} />
+            {children}
+          </Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

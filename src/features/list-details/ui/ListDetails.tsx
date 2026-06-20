@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import type { List } from "@/entities/list";
 import type { Word, WordStatus } from "@/entities/word/model/types";
 import {
@@ -32,18 +33,7 @@ type ListDetailsProps = {
   reviewCount: number;
 };
 
-const STATUS_LABELS: Record<WordStatus, string> = {
-  new: "New",
-  selected: "Selected",
-  rejected: "Rejected",
-  skipped: "Skipped",
-  encoded: "Encoded",
-  learning: "Learning",
-  weak: "Weak",
-  memorized: "Memorized",
-  reviewing: "Reviewing",
-  known: "Known",
-};
+// STATUS_LABELS is built dynamically inside the component using t()
 
 const STATUS_COLORS: Record<
   WordStatus,
@@ -62,6 +52,22 @@ const STATUS_COLORS: Record<
 };
 
 export function ListDetails({ list, words, reviewCount }: ListDetailsProps) {
+  const t = useTranslations("Lists");
+  const tCommon = useTranslations("Common");
+
+  const STATUS_LABELS: Record<WordStatus, string> = {
+    new: t("statusNew"),
+    selected: t("statusSelected"),
+    rejected: t("statusSkipped"),
+    skipped: t("statusSkipped"),
+    encoded: t("statusEncoded"),
+    learning: t("statusLearning"),
+    weak: t("statusWeak"),
+    memorized: t("statusMemorized"),
+    reviewing: t("statusReviewing"),
+    known: t("statusKnown"),
+  };
+
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -86,33 +92,33 @@ export function ListDetails({ list, words, reviewCount }: ListDetailsProps) {
   }, [recallQueue]);
 
   const statusGroups = [
-    { label: "New", count: words.filter((w) => w.status === "new").length },
-    { label: "Selected", count: words.filter((w) => w.status === "selected").length },
-    { label: "Encoded", count: words.filter((w) => w.status === "encoded").length },
-    { label: "Skipped", count: words.filter((w) => w.status === "skipped").length },
-    { label: "Learning", count: words.filter((w) => w.status === "learning").length },
-    { label: "Weak", count: words.filter((w) => w.status === "weak").length },
-    { label: "Memorized", count: words.filter((w) => w.status === "memorized").length },
-    { label: "Reviewing", count: words.filter((w) => w.status === "reviewing").length },
-    { label: "Known", count: words.filter((w) => w.status === "known").length },
-    { label: "Slow Encode", count: slowEncodeQueue.length },
+    { label: t("statusNew"), count: words.filter((w) => w.status === "new").length },
+    { label: t("statusSelected"), count: words.filter((w) => w.status === "selected").length },
+    { label: t("statusEncoded"), count: words.filter((w) => w.status === "encoded").length },
+    { label: t("statusSkipped"), count: words.filter((w) => w.status === "skipped").length },
+    { label: t("statusLearning"), count: words.filter((w) => w.status === "learning").length },
+    { label: t("statusWeak"), count: words.filter((w) => w.status === "weak").length },
+    { label: t("statusMemorized"), count: words.filter((w) => w.status === "memorized").length },
+    { label: t("statusReviewing"), count: words.filter((w) => w.status === "reviewing").length },
+    { label: t("statusKnown"), count: words.filter((w) => w.status === "known").length },
+    { label: t("statusSlowEncode"), count: slowEncodeQueue.length },
   ];
 
   const modes = [
-    { label: "Selection Mode", href: "selection", count: selectionQueue.length, active: selectionQueue.length > 0, detail: null },
-    { label: "Encoding Mode", href: "encoding", count: encodingQueue.length, active: encodingQueue.length > 0, detail: null },
-    { label: "Skipped Mode", href: "skipped", count: skippedQueue.length, active: skippedQueue.length > 0, detail: null },
-    { label: "Slow Encode", href: "slow-encode", count: slowEncodeQueue.length, active: slowEncodeQueue.length > 0, detail: null },
+    { label: t("selectionMode"), href: "selection", count: selectionQueue.length, active: selectionQueue.length > 0, detail: null },
+    { label: t("encodingMode"), href: "encoding", count: encodingQueue.length, active: encodingQueue.length > 0, detail: null },
+    { label: t("skippedMode"), href: "skipped", count: skippedQueue.length, active: skippedQueue.length > 0, detail: null },
+    { label: t("slowEncode"), href: "slow-encode", count: slowEncodeQueue.length, active: slowEncodeQueue.length > 0, detail: null },
     {
-      label: "Recall Mode",
+      label: t("recallMode"),
       href: "recall",
       count: recallQueue.length,
       active: recallQueue.length > 0,
       detail: recallQueue.length > 0
-        ? recallRounds.map((n, i) => `Round ${i + 1}: ${n}`).filter((_, i) => recallRounds[i] > 0).join(" · ") || null
+        ? recallRounds.map((n, i) => `${([t("round1"), t("round2"), t("round3")])[i]}: ${n}`).filter((_, i) => recallRounds[i] > 0).join(" · ") || null
         : null,
     },
-    { label: "Review", href: "review", count: reviewCount, active: reviewCount > 0, detail: null },
+    { label: t("review"), href: "review", count: reviewCount, active: reviewCount > 0, detail: null },
   ];
 
   return (
@@ -121,12 +127,12 @@ export function ListDetails({ list, words, reviewCount }: ListDetailsProps) {
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Link href="/lists" style={{ textDecoration: "none" }}>
             <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }}>
-              ← Back to Lists
+              {t("backToLists")}
             </Button>
           </Link>
           <Stack direction="row" spacing={1}>
             <Link href={`/lists/${list.id}/edit`} style={{ textDecoration: "none" }}>
-              <Button variant="outlined" size="small">+ Add words</Button>
+              <Button variant="outlined" size="small">{t("addWords")}</Button>
             </Link>
             <Button
               variant="outlined"
@@ -134,22 +140,22 @@ export function ListDetails({ list, words, reviewCount }: ListDetailsProps) {
               color="error"
               onClick={() => setDeleteOpen(true)}
             >
-              Delete
+              {tCommon("delete")}
             </Button>
           </Stack>
         </Stack>
 
         <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>
-          <DialogTitle>Delete list?</DialogTitle>
+          <DialogTitle>{t("deleteTitle")}</DialogTitle>
           <DialogContent>
             <DialogContentText>
-              This will permanently delete &quot;{list.name}&quot; and all its words. This action cannot be undone.
+              {t("deleteMessage", { name: list.name })}
             </DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setDeleteOpen(false)} disabled={isPending}>Cancel</Button>
+            <Button onClick={() => setDeleteOpen(false)} disabled={isPending}>{tCommon("cancel")}</Button>
             <Button color="error" onClick={handleDeleteConfirm} disabled={isPending}>
-              {isPending ? "Deleting…" : "Delete"}
+              {isPending ? tCommon("deleting") : tCommon("delete")}
             </Button>
           </DialogActions>
         </Dialog>
@@ -163,14 +169,14 @@ export function ListDetails({ list, words, reviewCount }: ListDetailsProps) {
           </Typography>
         )}
         <Typography variant="body2" color="text.secondary">
-          {words.length} {words.length === 1 ? "word" : "words"} total
+          {words.length} {t("words")}
         </Typography>
       </Stack>
 
       <Card>
         <CardContent>
           <Stack spacing={1.5}>
-            <Typography variant="h3">Summary</Typography>
+            <Typography variant="h3">{t("summary")}</Typography>
             <Stack direction="row" flexWrap="wrap" gap={1}>
               {statusGroups.map(({ label, count }) => (
                 <Chip
@@ -189,7 +195,7 @@ export function ListDetails({ list, words, reviewCount }: ListDetailsProps) {
       <Card>
         <CardContent>
           <Stack spacing={2}>
-            <Typography variant="h3">Modes</Typography>
+            <Typography variant="h3">{t("modes")}</Typography>
             <Stack spacing={1.5}>
               {modes.map(({ label, href, count, active, detail }) => (
                 <Link
@@ -230,13 +236,13 @@ export function ListDetails({ list, words, reviewCount }: ListDetailsProps) {
       <Card>
         <CardContent>
           <Stack spacing={1.5}>
-            <Typography variant="h3">Words</Typography>
+            <Typography variant="h3">{t("wordsSection")}</Typography>
             <Typography variant="caption" color="text.secondary">
-              This list is read-only. To add new words, create a new list.
+              {t("readOnly")}
             </Typography>
             {words.length === 0 ? (
               <Typography variant="body1" color="text.secondary">
-                No words in this list.
+                {t("noWords")}
               </Typography>
             ) : (
               <Stack spacing={0} divider={<Divider />}>

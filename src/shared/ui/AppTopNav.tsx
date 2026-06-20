@@ -15,17 +15,20 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { signOut } from "@/app/sign-in/actions";
-
-const NAV_LINKS = [
-  { href: "/courses", label: "Courses" },
-  { href: "/lists", label: "Lists" },
-  { href: "/patterns", label: "Patterns" },
-  { href: "/characteristics", label: "Characteristics" },
-];
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 export function AppTopNav({ isAuthenticated }: { isAuthenticated: boolean }) {
+  const t = useTranslations("Nav");
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const NAV_LINKS = [
+    { href: "/courses", label: t("courses") },
+    { href: "/lists", label: t("lists") },
+    { href: "/patterns", label: t("patterns") },
+    { href: "/characteristics", label: t("characteristics") },
+  ];
 
   return (
     <AppBar
@@ -53,9 +56,10 @@ export function AppTopNav({ isAuthenticated }: { isAuthenticated: boolean }) {
               </Button>
             ))}
             <Box sx={{ flex: 1 }} />
+            <LanguageSwitcher />
             <form action={signOut}>
               <Button type="submit" color="inherit" size="small">
-                Logout
+                {t("logout")}
               </Button>
             </form>
           </Box>
@@ -63,8 +67,9 @@ export function AppTopNav({ isAuthenticated }: { isAuthenticated: boolean }) {
 
         {/* Mobile hamburger */}
         {isAuthenticated && (
-          <Box sx={{ flex: 1, display: { xs: "flex", sm: "none" }, justifyContent: "flex-end" }}>
-            <IconButton onClick={() => setDrawerOpen(true)} color="inherit" aria-label="Menu">
+          <Box sx={{ flex: 1, display: { xs: "flex", sm: "none" }, justifyContent: "flex-end", gap: 1, alignItems: "center" }}>
+            <LanguageSwitcher />
+            <IconButton onClick={() => setDrawerOpen(true)} color="inherit" aria-label={t("menu")}>
               ☰
             </IconButton>
           </Box>
@@ -87,7 +92,7 @@ export function AppTopNav({ isAuthenticated }: { isAuthenticated: boolean }) {
           <ListItem disablePadding>
             <form action={signOut} style={{ width: "100%" }}>
               <ListItemButton type="submit" component="button" sx={{ width: "100%" }}>
-                <ListItemText primary="Logout" />
+                <ListItemText primary={t("logout")} />
               </ListItemButton>
             </form>
           </ListItem>

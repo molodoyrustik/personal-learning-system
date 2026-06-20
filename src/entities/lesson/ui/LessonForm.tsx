@@ -3,6 +3,7 @@
 import { Button, Stack, TextField, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 type LessonFormProps = {
   backHref: string;
@@ -22,6 +23,8 @@ export function LessonForm({
   onSubmit,
 }: LessonFormProps) {
   const router = useRouter();
+  const tLessons = useTranslations("Lessons");
+  const tCommon = useTranslations("Common");
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
   const [loading, setLoading] = useState(false);
@@ -52,7 +55,7 @@ export function LessonForm({
 
       <Stack spacing={2}>
         <TextField
-          label="Title"
+          label={tLessons("titleLabel")}
           fullWidth
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -60,7 +63,7 @@ export function LessonForm({
           autoFocus
         />
         <TextField
-          label="Description (optional)"
+          label={tLessons("descriptionLabel")}
           fullWidth
           multiline
           minRows={2}
@@ -75,7 +78,7 @@ export function LessonForm({
         disabled={!title.trim() || loading}
         sx={{ alignSelf: "flex-start" }}
       >
-        {loading ? `${submitLabel}…` : submitLabel}
+        {loading ? tCommon("saving") : submitLabel}
       </Button>
     </Stack>
   );

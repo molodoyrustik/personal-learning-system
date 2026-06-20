@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import type { Pattern, PatternRun, PatternSentence, SentenceStatus } from "@/entities/pattern";
 import {
   deletePatternAction,
@@ -38,11 +39,7 @@ type PatternDetailsProps = {
   runs: PatternRun[];
 };
 
-const STATUS_LABELS: Record<SentenceStatus, string> = {
-  new: "New",
-  marked: "Marked",
-  learning: "Learning",
-};
+// STATUS_LABELS built dynamically inside the component using t()
 
 const STATUS_COLORS: Record<SentenceStatus, "default" | "primary" | "warning" | "success"> = {
   new: "default",
@@ -58,6 +55,15 @@ function formatDuration(sec: number): string {
 }
 
 export function PatternDetails({ pattern, sentences, runs }: PatternDetailsProps) {
+  const t = useTranslations("Patterns");
+  const tCommon = useTranslations("Common");
+
+  const STATUS_LABELS: Record<SentenceStatus, string> = {
+    new: t("statusNew"),
+    marked: t("statusMarked"),
+    learning: t("statusLearning"),
+  };
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -90,20 +96,20 @@ export function PatternDetails({ pattern, sentences, runs }: PatternDetailsProps
 
   const modes = [
     {
-      label: "First Pass",
-      description: "Process new sentences",
+      label: t("firstPass"),
+      description: t("firstPassDescription"),
       href: `/patterns/${patternId}/first-pass`,
       count: firstPassCount,
     },
     {
-      label: "Review Marked",
-      description: "Fix hesitations and mistakes",
+      label: t("reviewMarked"),
+      description: t("reviewMarkedDescription"),
       href: `/patterns/${patternId}/review`,
       count: markedCount,
     },
     {
-      label: "Full Practice",
-      description: "Timed full-set run",
+      label: t("fullPractice"),
+      description: t("fullPracticeDescription"),
       href: `/patterns/${patternId}/full-practice`,
       count: fullPracticeCount,
     },
@@ -114,7 +120,7 @@ export function PatternDetails({ pattern, sentences, runs }: PatternDetailsProps
       <Stack spacing={0.5}>
         <Link href="/patterns" style={{ textDecoration: "none" }}>
           <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }}>
-            ← Back to Patterns
+            {t("backToPatterns")}
           </Button>
         </Link>
         <Typography variant="h1">{pattern.name}</Typography>
@@ -124,14 +130,14 @@ export function PatternDetails({ pattern, sentences, runs }: PatternDetailsProps
           </Typography>
         )}
         <Typography variant="body2" color="text.secondary">
-          {sentences.length} {sentences.length === 1 ? "sentence" : "sentences"} total
+          {sentences.length} {sentences.length === 1 ? t("sentence") : t("sentences")}
         </Typography>
       </Stack>
 
       <Card>
         <CardContent>
           <Stack spacing={1.5}>
-            <Typography variant="h3">Summary</Typography>
+            <Typography variant="h3">{t("summary")}</Typography>
             <Stack direction="row" flexWrap="wrap" gap={1}>
               {(["new", "marked", "learning"] as SentenceStatus[]).map((status) => {
                 const count = sentences.filter((s) => s.status === status).length;
@@ -153,7 +159,7 @@ export function PatternDetails({ pattern, sentences, runs }: PatternDetailsProps
       <Card>
         <CardContent>
           <Stack spacing={2}>
-            <Typography variant="h3">Modes</Typography>
+            <Typography variant="h3">{t("modes")}</Typography>
             <Stack spacing={1.5}>
               {modes.map(({ label, description, href, count }) => (
                 <Link
@@ -193,7 +199,7 @@ export function PatternDetails({ pattern, sentences, runs }: PatternDetailsProps
         <Card>
           <CardContent>
             <Stack spacing={1.5}>
-              <Typography variant="h3">Full Practice history</Typography>
+              <Typography variant="h3">{t("fullPracticeHistory")}</Typography>
               <Stack spacing={0} divider={<Divider />}>
                 {runs.map((run, i) => (
                   <Stack
@@ -221,14 +227,14 @@ export function PatternDetails({ pattern, sentences, runs }: PatternDetailsProps
         <CardContent>
           <Stack spacing={1.5}>
             <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Typography variant="h3">Sentences</Typography>
+              <Typography variant="h3">{t("sentencesSection")}</Typography>
               <Button variant="outlined" size="small" onClick={() => setDrawerOpen(true)}>
-                + Import
+                {t("importSentences")}
               </Button>
             </Stack>
             {sentences.length === 0 ? (
               <Typography variant="body1" color="text.secondary">
-                No sentences yet.
+                {t("noSentencesYet")}
               </Typography>
             ) : (
               <Stack spacing={0} divider={<Divider />}>
@@ -278,29 +284,29 @@ export function PatternDetails({ pattern, sentences, runs }: PatternDetailsProps
       <Card variant="outlined">
         <CardContent>
           <Stack spacing={1.5}>
-            <Typography variant="h3">Danger zone</Typography>
+            <Typography variant="h3">{t("dangerZone")}</Typography>
             <Button
               variant="outlined"
               color="error"
               onClick={() => setDeleteOpen(true)}
             >
-              Delete pattern
+              {t("deletePattern")}
             </Button>
           </Stack>
         </CardContent>
       </Card>
 
       <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>
-        <DialogTitle>Delete pattern?</DialogTitle>
+        <DialogTitle>{t("deleteTitle")}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            This will permanently delete &quot;{pattern.name}&quot; and all its sentences. This action cannot be undone.
+            {t("deleteMessage", { name: pattern.name })}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteOpen(false)} disabled={isPending}>Cancel</Button>
+          <Button onClick={() => setDeleteOpen(false)} disabled={isPending}>{tCommon("cancel")}</Button>
           <Button color="error" onClick={handleDeleteConfirm} disabled={isPending}>
-            {isPending ? "Deleting…" : "Delete"}
+            {isPending ? tCommon("deleting") : tCommon("delete")}
           </Button>
         </DialogActions>
       </Dialog>

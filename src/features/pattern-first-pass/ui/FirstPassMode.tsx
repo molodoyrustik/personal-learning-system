@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import type { PatternSentence } from "@/entities/pattern";
 import {
   markSentenceCorrectAction,
@@ -15,6 +16,7 @@ type FirstPassModeProps = {
 };
 
 export function FirstPassMode({ patternId, initialSentences }: FirstPassModeProps) {
+  const t = useTranslations("PatternModes");
   const sentences = useMemo(
     () => getFirstPassQueue(initialSentences, patternId),
     [initialSentences, patternId],
@@ -26,8 +28,8 @@ export function FirstPassMode({ patternId, initialSentences }: FirstPassModeProp
       backHref={`/patterns/${patternId}`}
       onCorrect={(id) => markSentenceCorrectAction(id, "first-pass")}
       onMistake={(id) => markSentenceMistakeAction(id)}
-      emptyLabel="No new sentences in this pattern."
-      completeLabel="First pass complete. Check Review Marked for any hesitations."
+      emptyLabel={t("noNewSentences")}
+      completeLabel={t("firstPassComplete")}
     />
   );
 }
