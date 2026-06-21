@@ -5,7 +5,9 @@
       "Bash(NODE_TLS_REJECT_UNAUTHORIZED=0 npx supabase *)",
       "Bash(xargs -I {} find {} -type f -name \"*.tsx\")",
       "Bash(npm install *)",
-      "Bash(xargs sed -i '' 's/sx={{ py: 4 }}/sx={{ pt: 1.5, pb: 4 }}/g')"
+      "Bash(xargs sed -i '' 's/sx={{ py: 4 }}/sx={{ pt: 1.5, pb: 4 }}/g')",
+      "Bash(supabase --version)",
+      "Bash(supabase db *)"
     ]
   },
   "enabledMcpjsonServers": [

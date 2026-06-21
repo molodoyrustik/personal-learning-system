@@ -95,6 +95,17 @@ export async function deleteSentenceAction(sentenceId: string, patternId: string
   revalidatePath(`/patterns/${patternId}`);
 }
 
+export async function resetPatternProgressAction(patternId: string): Promise<void> {
+  const { supabase, userId } = await getSupabase();
+  await supabase.from("pattern_sentences").update({
+    status: "new",
+    last_practiced_at: null,
+    updated_at: nowISO(),
+  }).eq("pattern_id", patternId).eq("user_id", userId);
+  await supabase.from("pattern_runs").delete().eq("pattern_id", patternId).eq("user_id", userId);
+  revalidatePath(`/patterns/${patternId}`);
+}
+
 export async function deletePatternAction(patternId: string) {
   const { supabase } = await getSupabase();
   await supabase.from("patterns").delete().eq("id", patternId);

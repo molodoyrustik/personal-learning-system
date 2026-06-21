@@ -29,7 +29,7 @@ import {
   isInEncodingQueue,
   isInSkippedQueue,
 } from "@/shared/model/app-store";
-import { deleteListAction } from "../actions";
+import { deleteListAction, resetListProgressAction } from "../actions";
 
 type ListDetailsProps = {
   list: List;
@@ -76,10 +76,19 @@ export function ListDetails({ list, words, reviewCount, lessonHref }: ListDetail
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const closeMenu = () => setMenuAnchor(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [isResetting, startResetTransition] = useTransition();
 
   function handleDeleteConfirm() {
     startTransition(() => deleteListAction(list.id));
+  }
+
+  function handleResetConfirm() {
+    startResetTransition(async () => {
+      await resetListProgressAction(list.id);
+      setResetOpen(false);
+    });
   }
 
   const selectionQueue = useMemo(() => words.filter((w) => w.status === "new"), [words]);
@@ -152,11 +161,29 @@ export function ListDetails({ list, words, reviewCount, lessonHref }: ListDetail
             <MenuItem component={Link} href={`/lists/${list.id}/edit`} onClick={closeMenu}>
               {tCommon("edit")}
             </MenuItem>
+            <MenuItem onClick={() => { closeMenu(); setResetOpen(true); }}>
+              {t("resetProgress")}
+            </MenuItem>
             <MenuItem onClick={() => { closeMenu(); setDeleteOpen(true); }} sx={{ color: "error.main" }}>
               {tCommon("delete")}
             </MenuItem>
           </Menu>
         </Stack>
+
+        <Dialog open={resetOpen} onClose={() => !isResetting && setResetOpen(false)}>
+          <DialogTitle>{t("resetTitle")}</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              {t("resetMessage", { name: list.name })}
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setResetOpen(false)} disabled={isResetting}>{tCommon("cancel")}</Button>
+            <Button color="warning" onClick={handleResetConfirm} disabled={isResetting}>
+              {isResetting ? t("resetting") : t("resetProgress")}
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>
           <DialogTitle>{t("deleteTitle")}</DialogTitle>

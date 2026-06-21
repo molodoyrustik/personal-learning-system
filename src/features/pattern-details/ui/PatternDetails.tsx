@@ -27,6 +27,7 @@ import {
   deletePatternAction,
   deleteSentenceAction,
   importSentencesAction,
+  resetPatternProgressAction,
 } from "@/entities/pattern/api/pattern-actions";
 import {
   ImportSentencesDrawer,
@@ -72,13 +73,22 @@ export function PatternDetails({ pattern, sentences, runs, lessonHref }: Pattern
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const closeMenu = () => setMenuAnchor(null);
   const [isPending, startTransition] = useTransition();
+  const [isResetting, startResetTransition] = useTransition();
   const patternId = pattern.id;
 
   function handleDeleteConfirm() {
     startTransition(() => deletePatternAction(patternId));
+  }
+
+  function handleResetConfirm() {
+    startResetTransition(async () => {
+      await resetPatternProgressAction(patternId);
+      setResetOpen(false);
+    });
   }
 
   const firstPassCount = useMemo(
@@ -148,6 +158,9 @@ export function PatternDetails({ pattern, sentences, runs, lessonHref }: Pattern
           >
             <MenuItem component={Link} href={`/patterns/${patternId}/edit`} onClick={closeMenu}>
               {tCommon("edit")}
+            </MenuItem>
+            <MenuItem onClick={() => { closeMenu(); setResetOpen(true); }}>
+              {t("resetProgress")}
             </MenuItem>
             <MenuItem onClick={() => { closeMenu(); setDeleteOpen(true); }} sx={{ color: "error.main" }}>
               {tCommon("delete")}
@@ -312,6 +325,21 @@ export function PatternDetails({ pattern, sentences, runs, lessonHref }: Pattern
           </Stack>
         </CardContent>
       </Card>
+
+      <Dialog open={resetOpen} onClose={() => !isResetting && setResetOpen(false)}>
+        <DialogTitle>{t("resetTitle")}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {t("resetMessage", { name: pattern.name })}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setResetOpen(false)} disabled={isResetting}>{tCommon("cancel")}</Button>
+          <Button color="warning" onClick={handleResetConfirm} disabled={isResetting}>
+            {isResetting ? t("resetting") : t("resetProgress")}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>
         <DialogTitle>{t("deleteTitle")}</DialogTitle>
