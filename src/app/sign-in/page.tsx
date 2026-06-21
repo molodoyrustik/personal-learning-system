@@ -18,6 +18,7 @@ function SubmitButton() {
 export default function SignInPage() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
+  const info = searchParams.get("info");
 
   return (
     <Box
@@ -30,6 +31,7 @@ export default function SignInPage() {
       <Stack spacing={3} width={320}>
         <Typography variant="h1">Sign in</Typography>
 
+        {info && <Alert severity="info">{info}</Alert>}
         {error && <Alert severity="error">{error}</Alert>}
 
         <form action={signIn}>

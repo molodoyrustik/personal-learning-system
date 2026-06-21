@@ -12,7 +12,7 @@ export async function signIn(formData: FormData) {
   });
 
   if (error) {
-    redirect("/sign-in?error=Invalid+credentials");
+    redirect(`/sign-in?error=${encodeURIComponent(error.message)}`);
   }
 
   redirect("/lists");
