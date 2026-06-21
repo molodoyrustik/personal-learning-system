@@ -1,7 +1,8 @@
 "use client";
 
-import { Box, Button, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, Stack, TextField, Typography } from "@mui/material";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { signIn } from "./actions";
 
@@ -15,6 +16,9 @@ function SubmitButton() {
 }
 
 export default function SignInPage() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
+
   return (
     <Box
       display="flex"
@@ -25,6 +29,8 @@ export default function SignInPage() {
     >
       <Stack spacing={3} width={320}>
         <Typography variant="h1">Sign in</Typography>
+
+        {error && <Alert severity="error">{error}</Alert>}
 
         <form action={signIn}>
           <Stack spacing={2}>
