@@ -4,6 +4,7 @@ import { Button, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import type { List } from "@/entities/list";
 import type { Word } from "@/entities/word/model/types";
 import {
   saveEncodingAction,
@@ -19,7 +20,7 @@ import {
 } from "@/features/word-encoding/ui/encoding-steps";
 
 type SlowEncodeModeProps = {
-  listId: string;
+  list: List;
   initialWords: Word[];
 };
 
@@ -47,7 +48,8 @@ function CompletionState({ empty, onBack, onNext }: { empty?: boolean; onBack: (
   );
 }
 
-export function SlowEncodeMode({ listId, initialWords }: SlowEncodeModeProps) {
+export function SlowEncodeMode({ list, initialWords }: SlowEncodeModeProps) {
+  const listId = list.id;
   const t = useTranslations("WordModes");
   const [queue, setQueue] = useState<Word[]>(() =>
     initialWords.filter((w) => isInSlowEncodeQueue(w)),
@@ -156,6 +158,7 @@ export function SlowEncodeMode({ listId, initialWords }: SlowEncodeModeProps) {
         <StepSoundEncoding
           word={current}
           value={soundAssociation}
+          targetLang={list.targetLanguage}
           onChange={setSoundAssociation}
           onNext={handleSoundNext}
           onSkip={handleSoundSkip}
@@ -174,6 +177,7 @@ export function SlowEncodeMode({ listId, initialWords }: SlowEncodeModeProps) {
           word={current}
           soundAssociation={soundAssociation}
           sceneDescription={sceneDescription}
+          targetLang={list.targetLanguage}
           onDone={handleDone}
         />
       )}

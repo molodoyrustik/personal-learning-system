@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import { useTranslations } from "next-intl";
 import type { Word } from "@/entities/word/model/types";
+import { PronounceButton } from "@/shared/ui/PronounceButton";
 
 export function StepImageCheck({
   word,
@@ -62,12 +63,14 @@ export function StepImageCheck({
 export function StepSoundEncoding({
   word,
   value,
+  targetLang,
   onChange,
   onNext,
   onSkip,
 }: {
   word: Word;
   value: string;
+  targetLang: string;
   onChange: (v: string) => void;
   onNext: () => void;
   onSkip: () => void;
@@ -78,10 +81,13 @@ export function StepSoundEncoding({
       <Card>
         <CardContent>
           <Stack spacing={2}>
-            <Stack spacing={0.5}>
-              <Typography variant="h2" textAlign="center">
-                {word.targetText}
-              </Typography>
+            <Stack spacing={0.5} alignItems="center">
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Typography variant="h2" textAlign="center">
+                  {word.targetText}
+                </Typography>
+                <PronounceButton text={word.targetText} lang={targetLang} />
+              </Stack>
               <Typography
                 variant="body2"
                 color="text.secondary"
@@ -178,11 +184,13 @@ export function StepFixation({
   word,
   soundAssociation,
   sceneDescription,
+  targetLang,
   onDone,
 }: {
   word: Word;
   soundAssociation: string;
   sceneDescription: string;
+  targetLang: string;
   onDone: () => void;
 }) {
   const t = useTranslations("WordModes");
@@ -192,7 +200,10 @@ export function StepFixation({
         <CardContent>
           <Stack spacing={2.5}>
             <Stack spacing={0.5} alignItems="center">
-              <Typography variant="h2">{word.targetText}</Typography>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Typography variant="h2">{word.targetText}</Typography>
+                <PronounceButton text={word.targetText} lang={targetLang} />
+              </Stack>
               <Typography variant="body2" color="text.secondary">
                 {word.sourceText}
               </Typography>

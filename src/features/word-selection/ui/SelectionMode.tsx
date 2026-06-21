@@ -4,18 +4,19 @@ import { Button, Card, CardContent, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import type { List } from "@/entities/list";
 import type { Word } from "@/entities/word/model/types";
 import { selectWordAction, rejectWordAction } from "@/entities/word/api/word-actions";
 
 type SelectionModeProps = {
-  listId: string;
+  list: List;
   initialWords: Word[];
 };
 
-export function SelectionMode({ listId, initialWords }: SelectionModeProps) {
+export function SelectionMode({ list, initialWords }: SelectionModeProps) {
   const router = useRouter();
   const t = useTranslations("WordModes");
-  function goBack() { router.refresh(); router.push(`/lists/${listId}`); }
+  function goBack() { router.refresh(); router.push(`/lists/${list.id}`); }
 
   const [queue, setQueue] = useState<Word[]>(() =>
     initialWords.filter((w) => w.status === "new"),
@@ -44,7 +45,7 @@ export function SelectionMode({ listId, initialWords }: SelectionModeProps) {
     setQueue((q) => [...q.slice(1), q[0]]);
   }
 
-  const goToEncoding = () => { router.refresh(); router.push(`/lists/${listId}/encoding`); };
+  const goToEncoding = () => { router.refresh(); router.push(`/lists/${list.id}/encoding`); };
 
   if (total === 0 && processed === 0) {
     return (

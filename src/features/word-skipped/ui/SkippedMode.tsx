@@ -4,6 +4,7 @@ import { Button, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import type { List } from "@/entities/list";
 import type { Word } from "@/entities/word/model/types";
 import {
   saveEncodingAction,
@@ -23,7 +24,7 @@ import {
 } from "@/features/word-encoding/ui/encoding-steps";
 
 type SkippedModeProps = {
-  listId: string;
+  list: List;
   initialWords: Word[];
 };
 
@@ -74,7 +75,8 @@ function CompletionState({ empty, outcomes, onBack, onGoToAgain, onGoToSlowEncod
   );
 }
 
-export function SkippedMode({ listId, initialWords }: SkippedModeProps) {
+export function SkippedMode({ list, initialWords }: SkippedModeProps) {
+  const listId = list.id;
   const t = useTranslations("WordModes");
   const [queue, setQueue] = useState<Word[]>(() =>
     initialWords.filter((w) => w.listId === listId && isInSkippedQueue(w)),
@@ -233,6 +235,7 @@ export function SkippedMode({ listId, initialWords }: SkippedModeProps) {
         <StepSoundEncoding
           word={current}
           value={soundAssociation}
+          targetLang={list.targetLanguage}
           onChange={setSoundAssociation}
           onNext={handleSoundNext}
           onSkip={handleSoundSkip}
@@ -251,6 +254,7 @@ export function SkippedMode({ listId, initialWords }: SkippedModeProps) {
           word={current}
           soundAssociation={soundAssociation}
           sceneDescription={sceneDescription}
+          targetLang={list.targetLanguage}
           onDone={handleDone}
         />
       )}

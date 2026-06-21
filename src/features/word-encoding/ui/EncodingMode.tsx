@@ -4,6 +4,7 @@ import { Button, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import type { List } from "@/entities/list";
 import type { Word } from "@/entities/word/model/types";
 import {
   saveEncodingAction,
@@ -22,7 +23,7 @@ import {
 } from "./encoding-steps";
 
 type EncodingModeProps = {
-  listId: string;
+  list: List;
   initialWords: Word[];
 };
 
@@ -65,7 +66,8 @@ function CompletionState({ empty, outcomes, onBack, onGoToSkipped, onGoToRecall 
   );
 }
 
-export function EncodingMode({ listId, initialWords }: EncodingModeProps) {
+export function EncodingMode({ list, initialWords }: EncodingModeProps) {
+  const listId = list.id;
   const t = useTranslations("WordModes");
   const [queue, setQueue] = useState<Word[]>(() =>
     initialWords.filter((w) => w.status === "selected"),
@@ -206,6 +208,7 @@ export function EncodingMode({ listId, initialWords }: EncodingModeProps) {
         <StepSoundEncoding
           word={current}
           value={soundAssociation}
+          targetLang={list.targetLanguage}
           onChange={setSoundAssociation}
           onNext={handleSoundNext}
           onSkip={handleSoundSkip}
@@ -224,6 +227,7 @@ export function EncodingMode({ listId, initialWords }: EncodingModeProps) {
           word={current}
           soundAssociation={soundAssociation}
           sceneDescription={sceneDescription}
+          targetLang={list.targetLanguage}
           onDone={handleDone}
         />
       )}

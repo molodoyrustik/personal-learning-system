@@ -14,6 +14,7 @@ import { useTranslations } from "next-intl";
 import type { List } from "@/entities/list";
 import type { Word } from "@/entities/word/model/types";
 import { markRecallResultAction } from "@/entities/word/api/word-actions";
+import { PronounceButton } from "@/shared/ui/PronounceButton";
 
 const TOTAL_ROUNDS = 6;
 const RECALL_STATUSES = ["encoded", "learning", "weak"] as const;
@@ -130,9 +131,14 @@ export function RecallMode({ list, initialWords }: RecallModeProps) {
       <Card>
         <CardContent>
           <Stack spacing={2.5}>
-            <Typography variant="h1" textAlign="center">
-              {prompt}
-            </Typography>
+            <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
+              <Typography variant="h1" textAlign="center">
+                {prompt}
+              </Typography>
+              {!isForward && (
+                <PronounceButton text={prompt} lang={list.targetLanguage} />
+              )}
+            </Stack>
             {isForward && current?.sceneDescription && (
               <>
                 <Divider />
