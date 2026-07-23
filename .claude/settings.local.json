@@ -11,7 +11,9 @@
       "Bash(npm view *)",
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('scripts',{}\\), indent=2\\)\\)\")",
       "Bash(npx biome *)",
-      "Bash(echo \"tsc exit: $?\")"
+      "Bash(echo \"tsc exit: $?\")",
+      "Bash(xargs -I{} sh -c 'echo \"=={}==\"; cat {}')",
+      "Bash(echo \"tsc: $?\")"
     ]
   },
   "enabledMcpjsonServers": [

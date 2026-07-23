@@ -166,7 +166,12 @@
     "sentenceAdded": "{count, plural, one {# sentence} other {# sentences}} added",
     "statusNew": "New",
     "statusMarked": "Marked",
-    "statusLearning": "Learning"
+    "statusLearning": "Learning",
+    "statusMemorized": "Memorized",
+    "statusReviewing": "Reviewing",
+    "statusKnown": "Known",
+    "review": "Review",
+    "reviewDescription": "Spaced review (FSRS)"
   },
   "Characteristics": {
     "title": "Characteristics",
@@ -260,7 +265,19 @@
     "showAnswer": "Show Answer",
     "correct": "Correct",
     "mistake": "Mistake",
-    "next": "Next →"
+    "next": "Next →",
+    "dailyReview": "Review",
+    "noSentencesToReview": "No sentences to review",
+    "allCaughtUp": "All caught up! Check back later when sentences are due.",
+    "reviewSessionComplete": "Review complete",
+    "youReviewedSentences": "Reviewed {count} {unit} today.",
+    "sentenceUnit": "sentence",
+    "sentencesUnit": "sentences",
+    "backToPattern": "← Back to pattern",
+    "rateAgain": "Again",
+    "rateHard": "Hard",
+    "rateGood": "Good",
+    "rateEasy": "Easy"
   },
   "Import": {
     "importWords": "Import words",

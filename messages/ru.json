@@ -166,7 +166,12 @@
     "sentenceAdded": "Добавлено {count, plural, one {# предложение} few {# предложения} other {# предложений}}",
     "statusNew": "Новые",
     "statusMarked": "Отмеченные",
-    "statusLearning": "В обучении"
+    "statusLearning": "В обучении",
+    "statusMemorized": "Запомнено",
+    "statusReviewing": "Повторяется",
+    "statusKnown": "Выучено",
+    "review": "Повторение",
+    "reviewDescription": "Повторить по расписанию (FSRS)"
   },
   "Characteristics": {
     "title": "Характеристики",
@@ -260,7 +265,19 @@
     "showAnswer": "Показать ответ",
     "correct": "Верно",
     "mistake": "Ошибка",
-    "next": "Далее →"
+    "next": "Далее →",
+    "dailyReview": "Повторение",
+    "noSentencesToReview": "Нет предложений для повторения",
+    "allCaughtUp": "Всё актуально! Вернитесь позже, когда подойдут предложения.",
+    "reviewSessionComplete": "Повторение завершено",
+    "youReviewedSentences": "Сегодня повторено {count} {unit}.",
+    "sentenceUnit": "предложение",
+    "sentencesUnit": "предложений",
+    "backToPattern": "← К паттерну",
+    "rateAgain": "Забыл",
+    "rateHard": "Сложно",
+    "rateGood": "Помню",
+    "rateEasy": "Легко"
   },
   "Import": {
     "importWords": "Импорт слов",

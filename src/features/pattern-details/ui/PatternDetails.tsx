@@ -1,5 +1,7 @@
 "use client";
 
+import CloseIcon from "@mui/icons-material/Close";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import {
   Button,
   Card,
@@ -17,12 +19,15 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import type { Pattern, PatternRun, PatternSentence, SentenceStatus } from "@/entities/pattern";
+import { useMemo, useState, useTransition } from "react";
+import type {
+  Pattern,
+  PatternRun,
+  PatternSentence,
+  SentenceStatus,
+} from "@/entities/pattern";
 import {
   deletePatternAction,
   deleteSentenceAction,
@@ -30,8 +35,8 @@ import {
   resetPatternProgressAction,
 } from "@/entities/pattern/api/pattern-actions";
 import {
-  ImportSentencesDrawer,
   type ImportedSentence,
+  ImportSentencesDrawer,
 } from "@/features/import-sentences";
 import {
   getFirstPassQueue,
@@ -43,15 +48,22 @@ type PatternDetailsProps = {
   pattern: Pattern;
   sentences: PatternSentence[];
   runs: PatternRun[];
+  reviewCount: number;
   lessonHref?: string;
 };
 
 // STATUS_LABELS built dynamically inside the component using t()
 
-const STATUS_COLORS: Record<SentenceStatus, "default" | "primary" | "warning" | "success"> = {
+const STATUS_COLORS: Record<
+  SentenceStatus,
+  "default" | "primary" | "warning" | "success" | "info" | "secondary"
+> = {
   new: "default",
   marked: "warning",
   learning: "success",
+  memorized: "info",
+  reviewing: "secondary",
+  known: "success",
 };
 
 function formatDuration(sec: number): string {
@@ -61,7 +73,13 @@ function formatDuration(sec: number): string {
   return s > 0 ? `${m} min ${s}s` : `${m} min`;
 }
 
-export function PatternDetails({ pattern, sentences, runs, lessonHref }: PatternDetailsProps) {
+export function PatternDetails({
+  pattern,
+  sentences,
+  runs,
+  reviewCount,
+  lessonHref,
+}: PatternDetailsProps) {
   const t = useTranslations("Patterns");
   const tCommon = useTranslations("Common");
 
@@ -69,6 +87,9 @@ export function PatternDetails({ pattern, sentences, runs, lessonHref }: Pattern
     new: t("statusNew"),
     marked: t("statusMarked"),
     learning: t("statusLearning"),
+    memorized: t("statusMemorized"),
+    reviewing: t("statusReviewing"),
+    known: t("statusKnown"),
   };
 
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -107,7 +128,10 @@ export function PatternDetails({ pattern, sentences, runs, lessonHref }: Pattern
   async function handleImport(imported: ImportedSentence[]) {
     await importSentencesAction(
       patternId,
-      imported.map(({ sourceText, targetText }) => ({ sourceText, targetText })),
+      imported.map(({ sourceText, targetText }) => ({
+        sourceText,
+        targetText,
+      })),
     );
     setDrawerOpen(false);
   }
@@ -131,14 +155,31 @@ export function PatternDetails({ pattern, sentences, runs, lessonHref }: Pattern
       href: `/patterns/${patternId}/full-practice`,
       count: fullPracticeCount,
     },
+    {
+      label: t("review"),
+      description: t("reviewDescription"),
+      href: `/patterns/${patternId}/spaced-review`,
+      count: reviewCount,
+    },
   ] as const;
 
   return (
     <>
       <Stack spacing={0.5}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Link href={lessonHref ?? "/patterns"} style={{ textDecoration: "none" }}>
-            <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }}>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+        >
+          <Link
+            href={lessonHref ?? "/patterns"}
+            style={{ textDecoration: "none" }}
+          >
+            <Button
+              variant="text"
+              size="small"
+              sx={{ px: 0, minHeight: "auto" }}
+            >
               {lessonHref ? t("backToLesson") : t("backToPatterns")}
             </Button>
           </Link>
@@ -156,13 +197,28 @@ export function PatternDetails({ pattern, sentences, runs, lessonHref }: Pattern
             anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
             transformOrigin={{ vertical: "top", horizontal: "right" }}
           >
-            <MenuItem component={Link} href={`/patterns/${patternId}/edit`} onClick={closeMenu}>
+            <MenuItem
+              component={Link}
+              href={`/patterns/${patternId}/edit`}
+              onClick={closeMenu}
+            >
               {tCommon("edit")}
             </MenuItem>
-            <MenuItem onClick={() => { closeMenu(); setResetOpen(true); }}>
+            <MenuItem
+              onClick={() => {
+                closeMenu();
+                setResetOpen(true);
+              }}
+            >
               {t("resetProgress")}
             </MenuItem>
-            <MenuItem onClick={() => { closeMenu(); setDeleteOpen(true); }} sx={{ color: "error.main" }}>
+            <MenuItem
+              onClick={() => {
+                closeMenu();
+                setDeleteOpen(true);
+              }}
+              sx={{ color: "error.main" }}
+            >
               {tCommon("delete")}
             </MenuItem>
           </Menu>
@@ -174,7 +230,8 @@ export function PatternDetails({ pattern, sentences, runs, lessonHref }: Pattern
           </Typography>
         )}
         <Typography variant="body2" color="text.secondary">
-          {sentences.length} {sentences.length === 1 ? t("sentence") : t("sentences")}
+          {sentences.length}{" "}
+          {sentences.length === 1 ? t("sentence") : t("sentences")}
         </Typography>
       </Stack>
 
@@ -183,8 +240,19 @@ export function PatternDetails({ pattern, sentences, runs, lessonHref }: Pattern
           <Stack spacing={1.5}>
             <Typography variant="h3">{t("summary")}</Typography>
             <Stack direction="row" flexWrap="wrap" gap={1}>
-              {(["new", "marked", "learning"] as SentenceStatus[]).map((status) => {
-                const count = sentences.filter((s) => s.status === status).length;
+              {(
+                [
+                  "new",
+                  "marked",
+                  "learning",
+                  "memorized",
+                  "reviewing",
+                  "known",
+                ] as SentenceStatus[]
+              ).map((status) => {
+                const count = sentences.filter(
+                  (s) => s.status === status,
+                ).length;
                 return (
                   <Chip
                     key={status}
@@ -221,7 +289,11 @@ export function PatternDetails({ pattern, sentences, runs, lessonHref }: Pattern
                   >
                     <Stack alignItems="flex-start" spacing={0}>
                       <span>{label}</span>
-                      <Typography variant="caption" color="text.secondary" component="span">
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        component="span"
+                      >
                         {description}
                       </Typography>
                     </Stack>
@@ -270,9 +342,17 @@ export function PatternDetails({ pattern, sentences, runs, lessonHref }: Pattern
       <Card>
         <CardContent>
           <Stack spacing={1.5}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+            >
               <Typography variant="h3">{t("sentencesSection")}</Typography>
-              <Button variant="outlined" size="small" onClick={() => setDrawerOpen(true)}>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => setDrawerOpen(true)}
+              >
                 {t("importSentences")}
               </Button>
             </Stack>
@@ -302,7 +382,12 @@ export function PatternDetails({ pattern, sentences, runs, lessonHref }: Pattern
                         </Typography>
                       )}
                     </Stack>
-                    <Stack direction="row" spacing={1} alignItems="center" flexShrink={0}>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
+                      flexShrink={0}
+                    >
                       <Chip
                         label={STATUS_LABELS[s.status]}
                         size="small"
@@ -326,7 +411,10 @@ export function PatternDetails({ pattern, sentences, runs, lessonHref }: Pattern
         </CardContent>
       </Card>
 
-      <Dialog open={resetOpen} onClose={() => !isResetting && setResetOpen(false)}>
+      <Dialog
+        open={resetOpen}
+        onClose={() => !isResetting && setResetOpen(false)}
+      >
         <DialogTitle>{t("resetTitle")}</DialogTitle>
         <DialogContent>
           <DialogContentText>
@@ -334,8 +422,14 @@ export function PatternDetails({ pattern, sentences, runs, lessonHref }: Pattern
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setResetOpen(false)} disabled={isResetting}>{tCommon("cancel")}</Button>
-          <Button color="warning" onClick={handleResetConfirm} disabled={isResetting}>
+          <Button onClick={() => setResetOpen(false)} disabled={isResetting}>
+            {tCommon("cancel")}
+          </Button>
+          <Button
+            color="warning"
+            onClick={handleResetConfirm}
+            disabled={isResetting}
+          >
             {isResetting ? t("resetting") : t("resetProgress")}
           </Button>
         </DialogActions>
@@ -349,8 +443,14 @@ export function PatternDetails({ pattern, sentences, runs, lessonHref }: Pattern
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteOpen(false)} disabled={isPending}>{tCommon("cancel")}</Button>
-          <Button color="error" onClick={handleDeleteConfirm} disabled={isPending}>
+          <Button onClick={() => setDeleteOpen(false)} disabled={isPending}>
+            {tCommon("cancel")}
+          </Button>
+          <Button
+            color="error"
+            onClick={handleDeleteConfirm}
+            disabled={isPending}
+          >
             {isPending ? tCommon("deleting") : tCommon("delete")}
           </Button>
         </DialogActions>

@@ -1,17 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import {
-  type Card,
-  type CardInput,
-  createEmptyCard,
-  fsrs,
-  type Grade,
-  generatorParameters,
-  Rating,
-  State,
-} from "ts-fsrs";
+import type { Grade } from "ts-fsrs";
 import { nowISO } from "@/shared/lib/date";
+import {
+  buildCardInput,
+  type Card,
+  createEmptyCard,
+  type FsrsColumns,
+  fsrsColumnsFromCard,
+  isGraduated,
+  Rating,
+  scheduler,
+} from "@/shared/lib/fsrs";
 import { createClient } from "@/shared/lib/supabase/server";
 import { nextEncodingRound } from "@/shared/model/app-store/utils";
 import type {
@@ -29,55 +30,13 @@ async function getSupabase() {
   return supabase;
 }
 
-// enable_short_term: false — our own Recall mode (6 rounds) already plays the
-// role of FSRS's short-term learning steps, so Review can go straight into
-// long-term interval scheduling from the very first pass (see LongTermScheduler
-// in ts-fsrs: every rating, including Again, resolves to State.Review with a
-// day-scale interval instead of a 1m/10m short step).
-const scheduler = fsrs(
-  generatorParameters({ enable_short_term: false, enable_fuzz: true }),
-);
-
-// A word "graduates" out of Review once FSRS trusts it for ~2 months without
-// prompting — mirrors the old scheme's top interval (30 days) plus one more
-// successful pass, but is now driven by the algorithm's own stability instead
-// of a fixed review count.
-const KNOWN_STABILITY_DAYS = 60;
-
-type FsrsRow = {
-  fsrs_stability: number | null;
-  fsrs_difficulty: number | null;
-  fsrs_state: number | null;
-  fsrs_reps: number | null;
-  fsrs_lapses: number | null;
-  fsrs_learning_steps: number | null;
-  next_review_at: string | null;
-  last_recalled_at: string | null;
-};
-
-function rowToCard(row: FsrsRow): CardInput {
-  return {
-    due: row.next_review_at ?? new Date(),
-    stability: row.fsrs_stability ?? 0,
-    difficulty: row.fsrs_difficulty ?? 0,
-    elapsed_days: 0,
-    scheduled_days: 0,
-    learning_steps: row.fsrs_learning_steps ?? 0,
-    reps: row.fsrs_reps ?? 0,
-    lapses: row.fsrs_lapses ?? 0,
-    state: row.fsrs_state ?? State.New,
-    last_review: row.last_recalled_at ?? undefined,
-  };
+function rowToCard(row: FsrsColumns & { last_recalled_at: string | null }) {
+  return buildCardInput(row, row.last_recalled_at);
 }
 
 function cardToUpdate(card: Card, now: Date) {
   return {
-    fsrs_stability: card.stability,
-    fsrs_difficulty: card.difficulty,
-    fsrs_state: card.state,
-    fsrs_reps: card.reps,
-    fsrs_lapses: card.lapses,
-    fsrs_learning_steps: card.learning_steps,
+    ...fsrsColumnsFromCard(card),
     last_recalled_at: now.toISOString(),
     updated_at: nowISO(),
   };
@@ -245,12 +204,7 @@ export async function markReviewResultAction(
 
   const now = new Date();
   const { card } = scheduler.next(rowToCard(word), now, rating as Grade);
-
-  // enable_short_term: false means every rating (including Again) resolves
-  // to State.Review with a day-scale interval — no separate "reset to
-  // Recall" path needed, FSRS just gives a shorter interval on failure.
-  const graduated =
-    card.state === State.Review && card.stability >= KNOWN_STABILITY_DAYS;
+  const graduated = isGraduated(card);
 
   await supabase
     .from("words")
