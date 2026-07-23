@@ -7,7 +7,11 @@
       "Bash(npm install *)",
       "Bash(xargs sed -i '' 's/sx={{ py: 4 }}/sx={{ pt: 1.5, pb: 4 }}/g')",
       "Bash(supabase --version)",
-      "Bash(supabase db *)"
+      "Bash(supabase db *)",
+      "Bash(npm view *)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('scripts',{}\\), indent=2\\)\\)\")",
+      "Bash(npx biome *)",
+      "Bash(echo \"tsc exit: $?\")"
     ]
   },
   "enabledMcpjsonServers": [

@@ -36,6 +36,12 @@ export function makeWord(params: {
     recallFailCount: 0,
     lastRecalledAt: null,
     nextReviewAt: null,
+    fsrsStability: null,
+    fsrsDifficulty: null,
+    fsrsState: null,
+    fsrsReps: 0,
+    fsrsLapses: 0,
+    fsrsLearningSteps: 0,
     createdAt: now,
     updatedAt: now,
   };

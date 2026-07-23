@@ -1,47 +1,98 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import {
+  type Card,
+  type CardInput,
+  createEmptyCard,
+  fsrs,
+  type Grade,
+  generatorParameters,
+  Rating,
+  State,
+} from "ts-fsrs";
+import { nowISO } from "@/shared/lib/date";
 import { createClient } from "@/shared/lib/supabase/server";
-import { addDaysISO, nowISO } from "@/shared/lib/date";
 import { nextEncodingRound } from "@/shared/model/app-store/utils";
-import type { EncodingAttemptRound, SelectionDecision } from "../model/types";
+import type {
+  EncodingAttemptRound,
+  ReviewRating,
+  SelectionDecision,
+} from "../model/types";
 
 async function getSupabase() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
   return supabase;
 }
 
-// Интервалы повторения (дни) по числу суммарных успешных вспоминаний.
-// Recall занимает 6 раундов (memorized при count = 6).
-// recallSuccessCount после memorized:
-//   6  → переход в memorized (+1 день до первого повторения)
-//   7  → +3 дня   (1-й review успех)
-//   8  → +7 дней  (2-й)
-//   9  → +14 дней (3-й)
-//   10 → +30 дней (4-й)
-//   11+ → known   (5-й)
-// Обратная совместимость: слова, запомненные по старой схеме (3 раунда):
-//   4→+3д, 5→+7д, 6→+14д (пересекается с новыми словами, но приемлемо)
-function getReviewIntervalDays(recallSuccessCount: number): number | null {
-  if (recallSuccessCount === 4) return 3;
-  if (recallSuccessCount === 5) return 7;
-  if (recallSuccessCount === 6) return 14;
-  if (recallSuccessCount === 7) return 3;
-  if (recallSuccessCount === 8) return 7;
-  if (recallSuccessCount === 9) return 14;
-  if (recallSuccessCount === 10) return 30;
-  return null; // >= 11 → known
+// enable_short_term: false — our own Recall mode (6 rounds) already plays the
+// role of FSRS's short-term learning steps, so Review can go straight into
+// long-term interval scheduling from the very first pass (see LongTermScheduler
+// in ts-fsrs: every rating, including Again, resolves to State.Review with a
+// day-scale interval instead of a 1m/10m short step).
+const scheduler = fsrs(
+  generatorParameters({ enable_short_term: false, enable_fuzz: true }),
+);
+
+// A word "graduates" out of Review once FSRS trusts it for ~2 months without
+// prompting — mirrors the old scheme's top interval (30 days) plus one more
+// successful pass, but is now driven by the algorithm's own stability instead
+// of a fixed review count.
+const KNOWN_STABILITY_DAYS = 60;
+
+type FsrsRow = {
+  fsrs_stability: number | null;
+  fsrs_difficulty: number | null;
+  fsrs_state: number | null;
+  fsrs_reps: number | null;
+  fsrs_lapses: number | null;
+  fsrs_learning_steps: number | null;
+  next_review_at: string | null;
+  last_recalled_at: string | null;
+};
+
+function rowToCard(row: FsrsRow): CardInput {
+  return {
+    due: row.next_review_at ?? new Date(),
+    stability: row.fsrs_stability ?? 0,
+    difficulty: row.fsrs_difficulty ?? 0,
+    elapsed_days: 0,
+    scheduled_days: 0,
+    learning_steps: row.fsrs_learning_steps ?? 0,
+    reps: row.fsrs_reps ?? 0,
+    lapses: row.fsrs_lapses ?? 0,
+    state: row.fsrs_state ?? State.New,
+    last_review: row.last_recalled_at ?? undefined,
+  };
+}
+
+function cardToUpdate(card: Card, now: Date) {
+  return {
+    fsrs_stability: card.stability,
+    fsrs_difficulty: card.difficulty,
+    fsrs_state: card.state,
+    fsrs_reps: card.reps,
+    fsrs_lapses: card.lapses,
+    fsrs_learning_steps: card.learning_steps,
+    last_recalled_at: now.toISOString(),
+    updated_at: nowISO(),
+  };
 }
 
 export async function selectWordAction(wordId: string) {
   const supabase = await getSupabase();
-  await supabase.from("words").update({
-    status: "selected",
-    selection_decision: "unknown_and_needed",
-    updated_at: nowISO(),
-  }).eq("id", wordId);
+  await supabase
+    .from("words")
+    .update({
+      status: "selected",
+      selection_decision: "unknown_and_needed",
+      updated_at: nowISO(),
+    })
+    .eq("id", wordId);
 }
 
 export async function rejectWordAction(
@@ -49,11 +100,14 @@ export async function rejectWordAction(
   reason: Exclude<SelectionDecision, "unknown_and_needed" | null>,
 ) {
   const supabase = await getSupabase();
-  await supabase.from("words").update({
-    status: "rejected",
-    selection_decision: reason,
-    updated_at: nowISO(),
-  }).eq("id", wordId);
+  await supabase
+    .from("words")
+    .update({
+      status: "rejected",
+      selection_decision: reason,
+      updated_at: nowISO(),
+    })
+    .eq("id", wordId);
 }
 
 export async function setMeaningVisualizationAction(
@@ -61,10 +115,13 @@ export async function setMeaningVisualizationAction(
   canVisualizeMeaning: boolean,
 ) {
   const supabase = await getSupabase();
-  await supabase.from("words").update({
-    can_visualize_meaning: canVisualizeMeaning,
-    updated_at: nowISO(),
-  }).eq("id", wordId);
+  await supabase
+    .from("words")
+    .update({
+      can_visualize_meaning: canVisualizeMeaning,
+      updated_at: nowISO(),
+    })
+    .eq("id", wordId);
 }
 
 export async function saveEncodingAction(
@@ -82,14 +139,17 @@ export async function saveEncodingAction(
   const r = word.encoding_attempt_round as EncodingAttemptRound;
   const encodingAttemptRound = r == null ? 1 : r === 1 ? 2 : r === 2 ? 3 : 3;
 
-  await supabase.from("words").update({
-    sound_association: params.soundAssociation,
-    scene_description: params.sceneDescription,
-    status: "encoded",
-    encoding_attempt_count: word.encoding_attempt_count + 1,
-    encoding_attempt_round: encodingAttemptRound,
-    updated_at: nowISO(),
-  }).eq("id", wordId);
+  await supabase
+    .from("words")
+    .update({
+      sound_association: params.soundAssociation,
+      scene_description: params.sceneDescription,
+      status: "encoded",
+      encoding_attempt_count: word.encoding_attempt_count + 1,
+      encoding_attempt_round: encodingAttemptRound,
+      updated_at: nowISO(),
+    })
+    .eq("id", wordId);
 }
 
 export async function skipWordAction(wordId: string) {
@@ -101,16 +161,24 @@ export async function skipWordAction(wordId: string) {
     .single();
   if (!word) return;
 
-  await supabase.from("words").update({
-    status: "skipped",
-    skip_count: word.skip_count + 1,
-    encoding_attempt_count: word.encoding_attempt_count + 1,
-    encoding_attempt_round: nextEncodingRound(word.encoding_attempt_round as EncodingAttemptRound),
-    updated_at: nowISO(),
-  }).eq("id", wordId);
+  await supabase
+    .from("words")
+    .update({
+      status: "skipped",
+      skip_count: word.skip_count + 1,
+      encoding_attempt_count: word.encoding_attempt_count + 1,
+      encoding_attempt_round: nextEncodingRound(
+        word.encoding_attempt_round as EncodingAttemptRound,
+      ),
+      updated_at: nowISO(),
+    })
+    .eq("id", wordId);
 }
 
-export async function markRecallResultAction(wordId: string, remembered: boolean) {
+export async function markRecallResultAction(
+  wordId: string,
+  remembered: boolean,
+) {
   const supabase = await getSupabase();
   const { data: word } = await supabase
     .from("words")
@@ -122,62 +190,76 @@ export async function markRecallResultAction(wordId: string, remembered: boolean
   if (remembered) {
     const recallSuccessCount = word.recall_success_count + 1;
     if (recallSuccessCount >= 6) {
-      await supabase.from("words").update({
-        recall_success_count: recallSuccessCount,
-        status: "memorized",
-        next_review_at: addDaysISO(1),
-        last_recalled_at: nowISO(),
-        updated_at: nowISO(),
-      }).eq("id", wordId);
+      // Word graduates out of Recall — seed its FSRS card with a first
+      // "Good" review (it just proved itself over 6 rounds) and hand it
+      // off to Review mode for long-term spaced scheduling.
+      const now = new Date();
+      const { card } = scheduler.next(createEmptyCard(now), now, Rating.Good);
+      await supabase
+        .from("words")
+        .update({
+          recall_success_count: recallSuccessCount,
+          status: "memorized",
+          next_review_at: card.due.toISOString(),
+          ...cardToUpdate(card, now),
+        })
+        .eq("id", wordId);
     } else {
-      await supabase.from("words").update({
-        recall_success_count: recallSuccessCount,
-        status: "learning",
-        last_recalled_at: nowISO(),
-        updated_at: nowISO(),
-      }).eq("id", wordId);
+      await supabase
+        .from("words")
+        .update({
+          recall_success_count: recallSuccessCount,
+          status: "learning",
+          last_recalled_at: nowISO(),
+          updated_at: nowISO(),
+        })
+        .eq("id", wordId);
     }
   } else {
     const recallFailCount = word.recall_fail_count + 1;
-    await supabase.from("words").update({
-      recall_fail_count: recallFailCount,
-      status: recallFailCount >= 2 ? "weak" : "learning",
-      last_recalled_at: nowISO(),
-      updated_at: nowISO(),
-    }).eq("id", wordId);
+    await supabase
+      .from("words")
+      .update({
+        recall_fail_count: recallFailCount,
+        status: recallFailCount >= 2 ? "weak" : "learning",
+        last_recalled_at: nowISO(),
+        updated_at: nowISO(),
+      })
+      .eq("id", wordId);
   }
 }
 
-export async function markReviewResultAction(wordId: string, remembered: boolean) {
+export async function markReviewResultAction(
+  wordId: string,
+  rating: ReviewRating,
+) {
   const supabase = await getSupabase();
   const { data: word } = await supabase
     .from("words")
-    .select("recall_success_count, recall_fail_count")
+    .select(
+      "fsrs_stability, fsrs_difficulty, fsrs_state, fsrs_reps, fsrs_lapses, fsrs_learning_steps, next_review_at, last_recalled_at",
+    )
     .eq("id", wordId)
     .single();
   if (!word) return;
 
-  if (remembered) {
-    const recallSuccessCount = word.recall_success_count + 1;
-    const intervalDays = getReviewIntervalDays(recallSuccessCount);
-    await supabase.from("words").update({
-      recall_success_count: recallSuccessCount,
-      status: intervalDays === null ? "known" : "reviewing",
-      next_review_at: intervalDays !== null ? addDaysISO(intervalDays) : null,
-      last_recalled_at: nowISO(),
-      updated_at: nowISO(),
-    }).eq("id", wordId);
-  } else {
-    // Провал — сбрасываем счётчик и возвращаем в learning
-    await supabase.from("words").update({
-      recall_success_count: 0,
-      recall_fail_count: word.recall_fail_count + 1,
-      status: "learning",
-      next_review_at: null,
-      last_recalled_at: nowISO(),
-      updated_at: nowISO(),
-    }).eq("id", wordId);
-  }
+  const now = new Date();
+  const { card } = scheduler.next(rowToCard(word), now, rating as Grade);
+
+  // enable_short_term: false means every rating (including Again) resolves
+  // to State.Review with a day-scale interval — no separate "reset to
+  // Recall" path needed, FSRS just gives a shorter interval on failure.
+  const graduated =
+    card.state === State.Review && card.stability >= KNOWN_STABILITY_DAYS;
+
+  await supabase
+    .from("words")
+    .update({
+      status: graduated ? "known" : "reviewing",
+      next_review_at: graduated ? null : card.due.toISOString(),
+      ...cardToUpdate(card, now),
+    })
+    .eq("id", wordId);
 }
 
 export async function getDueReviewWordsByListId(listId: string) {
@@ -192,7 +274,9 @@ export async function getDueReviewWordsByListId(listId: string) {
   return data ?? [];
 }
 
-export async function getDueReviewWordCountByListId(listId: string): Promise<number> {
+export async function getDueReviewWordCountByListId(
+  listId: string,
+): Promise<number> {
   const supabase = await getSupabase();
   const { count } = await supabase
     .from("words")

@@ -9,9 +9,17 @@ import {
   Typography,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
+import type { ReviewRating } from "@/entities/word";
 import { markReviewResultAction } from "@/entities/word/api/word-actions";
+
+// Mirrors ts-fsrs `Rating` (Again/Hard/Good/Easy) without importing the
+// library into the client bundle — the numbers are the contract.
+const AGAIN: ReviewRating = 1;
+const HARD: ReviewRating = 2;
+const GOOD: ReviewRating = 3;
+const EASY: ReviewRating = 4;
 
 type ReviewWord = {
   id: string;
@@ -43,28 +51,33 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
     setIsAnswerVisible(false);
   }
 
-  async function handleRemembered() {
+  async function handleRate(rating: ReviewRating) {
     if (!current) return;
-    await markReviewResultAction(current.id, true);
-    moveToNext();
-  }
-
-  async function handleForgot() {
-    if (!current) return;
-    await markReviewResultAction(current.id, false);
+    await markReviewResultAction(current.id, rating);
     moveToNext();
   }
 
   if (total === 0) {
     return (
-      <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
+      <Stack
+        spacing={3}
+        alignItems="center"
+        justifyContent="center"
+        sx={{ minHeight: "60vh" }}
+      >
         <Stack spacing={1} alignItems="center">
           <Typography variant="h2">{t("noWordsToReview")}</Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center">
             {t("allCaughtUp")}
           </Typography>
         </Stack>
-        <Button variant="outlined" onClick={() => { router.refresh(); router.push(`/lists/${listId}`); }}>
+        <Button
+          variant="outlined"
+          onClick={() => {
+            router.refresh();
+            router.push(`/lists/${listId}`);
+          }}
+        >
           {t("backToList")}
         </Button>
       </Stack>
@@ -73,14 +86,28 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
 
   if (!current) {
     return (
-      <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
+      <Stack
+        spacing={3}
+        alignItems="center"
+        justifyContent="center"
+        sx={{ minHeight: "60vh" }}
+      >
         <Stack spacing={1} alignItems="center">
           <Typography variant="h2">{t("reviewComplete")}</Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center">
-            {t("youReviewed", { count: doneCount, unit: doneCount === 1 ? t("word") : t("wordsUnit") })}
+            {t("youReviewed", {
+              count: doneCount,
+              unit: doneCount === 1 ? t("word") : t("wordsUnit"),
+            })}
           </Typography>
         </Stack>
-        <Button variant="outlined" onClick={() => { router.refresh(); router.push(`/lists/${listId}`); }}>
+        <Button
+          variant="outlined"
+          onClick={() => {
+            router.refresh();
+            router.push(`/lists/${listId}`);
+          }}
+        >
           {t("backToList")}
         </Button>
       </Stack>
@@ -109,19 +136,31 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
               <>
                 <Divider />
                 <Stack spacing={0.5}>
-                  <Typography variant="caption" color="text.secondary">{t("scene")}</Typography>
-                  <Typography variant="body1">{current.scene_description}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {t("scene")}
+                  </Typography>
+                  <Typography variant="body1">
+                    {current.scene_description}
+                  </Typography>
                 </Stack>
               </>
             )}
             {current.sound_association && (
               <Stack spacing={0.5}>
-                <Typography variant="caption" color="text.secondary">{t("association")}</Typography>
-                <Typography variant="body1">{current.sound_association}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {t("association")}
+                </Typography>
+                <Typography variant="body1">
+                  {current.sound_association}
+                </Typography>
               </Stack>
             )}
 
-            <Typography variant="body2" color="text.secondary" textAlign="center">
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              textAlign="center"
+            >
               {t("whatIsThisWord")}
             </Typography>
 
@@ -140,16 +179,45 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
       </Card>
 
       {!isAnswerVisible ? (
-        <Button variant="contained" fullWidth onClick={() => setIsAnswerVisible(true)}>
+        <Button
+          variant="contained"
+          fullWidth
+          onClick={() => setIsAnswerVisible(true)}
+        >
           {t("showAnswer")}
         </Button>
       ) : (
-        <Stack spacing={1.5}>
-          <Button variant="contained" fullWidth onClick={handleRemembered}>
-            {t("remembered")}
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant="outlined"
+            color="error"
+            fullWidth
+            onClick={() => handleRate(AGAIN)}
+          >
+            {t("rateAgain")}
           </Button>
-          <Button variant="outlined" fullWidth onClick={handleForgot}>
-            {t("forgot")}
+          <Button
+            variant="outlined"
+            color="warning"
+            fullWidth
+            onClick={() => handleRate(HARD)}
+          >
+            {t("rateHard")}
+          </Button>
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={() => handleRate(GOOD)}
+          >
+            {t("rateGood")}
+          </Button>
+          <Button
+            variant="outlined"
+            color="success"
+            fullWidth
+            onClick={() => handleRate(EASY)}
+          >
+            {t("rateEasy")}
           </Button>
         </Stack>
       )}
