@@ -38,6 +38,10 @@ export type PatternSentence = {
   lastPracticedAt: string | null;
   nextReviewAt: string | null;
 
+  // Correct answers accrued in Full Practice mode. Graduates to "memorized"
+  // (first FSRS card) once it reaches TOTAL_FULL_PRACTICE_PASSES.
+  fullPracticeSuccessCount: number;
+
   // FSRS card state, used from "memorized" onward (spaced Review mode).
   fsrsStability: number | null;
   fsrsDifficulty: number | null;

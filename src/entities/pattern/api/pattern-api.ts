@@ -22,6 +22,7 @@ function mapSentence(row: Record<string, unknown>): PatternSentence {
     status: row.status as PatternSentence["status"],
     lastPracticedAt: (row.last_practiced_at as string | null) ?? null,
     nextReviewAt: (row.next_review_at as string | null) ?? null,
+    fullPracticeSuccessCount: (row.full_practice_success_count as number) ?? 0,
     fsrsStability: (row.fsrs_stability as number | null) ?? null,
     fsrsDifficulty: (row.fsrs_difficulty as number | null) ?? null,
     fsrsState: (row.fsrs_state as PatternSentence["fsrsState"]) ?? null,

@@ -19,6 +19,10 @@ import { createClient } from "@/shared/lib/supabase/server";
 import type { PracticeMode } from "@/shared/model/patterns-store";
 import type { ReviewRating } from "../model/types";
 
+// Clean Full Practice passes required before a sentence graduates into
+// FSRS Review. Mirrors words' RecallMode round count (there: 6).
+const TOTAL_FULL_PRACTICE_PASSES = 3;
+
 async function getSupabase() {
   const supabase = await createClient();
   const {
@@ -137,6 +141,7 @@ export async function resetPatternProgressAction(
       status: "new",
       last_practiced_at: null,
       next_review_at: null,
+      full_practice_success_count: 0,
       fsrs_stability: null,
       fsrs_difficulty: null,
       fsrs_state: null,
@@ -168,18 +173,37 @@ export async function markSentenceCorrectAction(
   const { supabase } = await getSupabase();
 
   if (mode === "full-practice") {
-    // One clean Full Practice pass is enough proof to graduate into FSRS
-    // Review — producing a whole sentence correctly is harder per attempt
-    // than recalling a single word, so unlike word Recall's 6 rounds, a
-    // single pass here is already solid evidence of short-term retention.
-    const now = new Date();
-    const { card } = scheduler.next(createEmptyCard(now), now, Rating.Good);
+    const { data: sentence } = await supabase
+      .from("pattern_sentences")
+      .select("full_practice_success_count")
+      .eq("id", sentenceId)
+      .single();
+    const fullPracticeSuccessCount =
+      (sentence?.full_practice_success_count ?? 0) + 1;
+
+    if (fullPracticeSuccessCount >= TOTAL_FULL_PRACTICE_PASSES) {
+      // Enough clean Full Practice passes — graduate into FSRS Review with
+      // a first "Good" review seeding the card.
+      const now = new Date();
+      const { card } = scheduler.next(createEmptyCard(now), now, Rating.Good);
+      await supabase
+        .from("pattern_sentences")
+        .update({
+          full_practice_success_count: fullPracticeSuccessCount,
+          status: "memorized",
+          next_review_at: card.due.toISOString(),
+          ...cardToUpdate(card, now),
+        })
+        .eq("id", sentenceId);
+      return;
+    }
+
     await supabase
       .from("pattern_sentences")
       .update({
-        status: "memorized",
-        next_review_at: card.due.toISOString(),
-        ...cardToUpdate(card, now),
+        full_practice_success_count: fullPracticeSuccessCount,
+        last_practiced_at: nowISO(),
+        updated_at: nowISO(),
       })
       .eq("id", sentenceId);
     return;
