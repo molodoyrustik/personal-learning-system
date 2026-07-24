@@ -138,7 +138,6 @@ export function EncodingMode({ list, initialWords }: EncodingModeProps) {
   }
 
   function handleSoundNext() {
-    if (!soundAssociation.trim()) return;
     setStep(3);
   }
 
@@ -150,7 +149,6 @@ export function EncodingMode({ list, initialWords }: EncodingModeProps) {
   }
 
   function handleSceneSave() {
-    if (!sceneDescription.trim()) return;
     setStep(4);
   }
 

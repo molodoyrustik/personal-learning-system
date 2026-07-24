@@ -88,7 +88,6 @@ export function SlowEncodeMode({ list, initialWords }: SlowEncodeModeProps) {
   }
 
   function handleSoundNext() {
-    if (!soundAssociation.trim()) return;
     setStep(3);
   }
 
@@ -99,7 +98,6 @@ export function SlowEncodeMode({ list, initialWords }: SlowEncodeModeProps) {
   }
 
   function handleSceneSave() {
-    if (!sceneDescription.trim()) return;
     setStep(4);
   }
 

@@ -159,7 +159,6 @@ export function SkippedMode({ list, initialWords }: SkippedModeProps) {
   }
 
   function handleSoundNext() {
-    if (!soundAssociation.trim()) return;
     setStep(3);
   }
 
@@ -171,7 +170,6 @@ export function SkippedMode({ list, initialWords }: SkippedModeProps) {
   }
 
   function handleSceneSave() {
-    if (!sceneDescription.trim()) return;
     setStep(4);
   }
 

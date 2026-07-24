@@ -101,7 +101,7 @@ export function StepSoundEncoding({
               placeholder={t("enterAssociation")}
               value={value}
               onChange={(e) => onChange(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && value.trim() && onNext()}
+              onKeyDown={(e) => e.key === "Enter" && onNext()}
               fullWidth
               autoFocus
             />
@@ -109,12 +109,7 @@ export function StepSoundEncoding({
         </CardContent>
       </Card>
       <Stack spacing={1.5}>
-        <Button
-          variant="contained"
-          fullWidth
-          onClick={onNext}
-          disabled={!value.trim()}
-        >
+        <Button variant="contained" fullWidth onClick={onNext}>
           {t("next")}
         </Button>
         <Button variant="text" fullWidth color="inherit" onClick={onSkip}>
@@ -154,22 +149,15 @@ export function StepSceneCreation({
               placeholder={t("describeScene")}
               value={value}
               onChange={(e) => onChange(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && value.trim() && onSave()}
+              onKeyDown={(e) => e.key === "Enter" && onSave()}
               fullWidth
-              multiline
-              minRows={3}
               autoFocus
             />
           </Stack>
         </CardContent>
       </Card>
       <Stack spacing={1.5}>
-        <Button
-          variant="contained"
-          fullWidth
-          onClick={onSave}
-          disabled={!value.trim()}
-        >
+        <Button variant="contained" fullWidth onClick={onSave}>
           {t("done2")}
         </Button>
         <Button variant="text" fullWidth color="inherit" onClick={onSkip}>
@@ -208,18 +196,22 @@ export function StepFixation({
                 {word.sourceText}
               </Typography>
             </Stack>
-            <Stack spacing={0.5}>
-              <Typography variant="caption" color="text.secondary">
-                {t("association")}
-              </Typography>
-              <Typography variant="body1">{soundAssociation}</Typography>
-            </Stack>
-            <Stack spacing={0.5}>
-              <Typography variant="caption" color="text.secondary">
-                {t("scene")}
-              </Typography>
-              <Typography variant="body1">{sceneDescription}</Typography>
-            </Stack>
+            {soundAssociation && (
+              <Stack spacing={0.5}>
+                <Typography variant="caption" color="text.secondary">
+                  {t("association")}
+                </Typography>
+                <Typography variant="body1">{soundAssociation}</Typography>
+              </Stack>
+            )}
+            {sceneDescription && (
+              <Stack spacing={0.5}>
+                <Typography variant="caption" color="text.secondary">
+                  {t("scene")}
+                </Typography>
+                <Typography variant="body1">{sceneDescription}</Typography>
+              </Stack>
+            )}
             <Typography
               variant="body2"
               color="text.secondary"

@@ -15,7 +15,8 @@
       "Bash(xargs -I{} sh -c 'echo \"=={}==\"; cat {}')",
       "Bash(echo \"tsc: $?\")",
       "Bash(supabase status *)",
-      "Bash(supabase migration *)"
+      "Bash(supabase migration *)",
+      "Bash(python3 *)"
     ]
   },
   "enabledMcpjsonServers": [
