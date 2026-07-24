@@ -16,7 +16,9 @@
       "Bash(echo \"tsc: $?\")",
       "Bash(supabase status *)",
       "Bash(supabase migration *)",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "Bash(npm run *)",
+      "Bash(npx --yes ts-prune)"
     ]
   },
   "enabledMcpjsonServers": [

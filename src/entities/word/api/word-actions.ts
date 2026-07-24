@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import type { Grade } from "ts-fsrs";
 import { nowISO } from "@/shared/lib/date";
 import {
