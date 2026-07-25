@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import type { List } from "@/entities/list";
 import type { Word } from "@/entities/word/model/types";
 import { selectWordAction, rejectWordAction } from "@/entities/word/api/word-actions";
+import { STUDY_ACTION_BAR_OFFSET, StudyActionBar } from "@/shared/ui/StudyActionBar";
 
 type SelectionModeProps = {
   list: List;
@@ -79,37 +80,41 @@ export function SelectionMode({ list, initialWords }: SelectionModeProps) {
   }
 
   return (
-    <Stack spacing={3}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} onClick={goBack}>
-          {t("back")}
-        </Button>
-        <Typography variant="caption" color="text.secondary">
-          {processed} / {total}
-        </Typography>
+    <>
+      <Stack spacing={3} sx={{ pb: STUDY_ACTION_BAR_OFFSET }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} onClick={goBack}>
+            {t("back")}
+          </Button>
+          <Typography variant="caption" color="text.secondary">
+            {processed} / {total}
+          </Typography>
+        </Stack>
+
+        <Card>
+          <CardContent>
+            <Stack alignItems="center" justifyContent="center" sx={{ minHeight: 160, py: 2 }}>
+              <Typography variant="h1" textAlign="center">
+                {current?.sourceText ?? "—"}
+              </Typography>
+            </Stack>
+          </CardContent>
+        </Card>
       </Stack>
 
-      <Card>
-        <CardContent>
-          <Stack alignItems="center" justifyContent="center" sx={{ minHeight: 160, py: 2 }}>
-            <Typography variant="h1" textAlign="center">
-              {current?.sourceText ?? "—"}
-            </Typography>
-          </Stack>
-        </CardContent>
-      </Card>
-
-      <Stack spacing={1.5}>
-        <Button variant="contained" fullWidth onClick={handleNeedToLearn}>
-          {t("needToLearn")}
-        </Button>
-        <Button variant="outlined" fullWidth onClick={handleAlreadyKnow}>
-          {t("iKnow")}
-        </Button>
-        <Button variant="text" fullWidth onClick={handleSkip} color="inherit">
-          {t("skip")}
-        </Button>
-      </Stack>
-    </Stack>
+      <StudyActionBar>
+        <Stack direction="row" spacing={1}>
+          <Button variant="text" fullWidth onClick={handleSkip} color="inherit">
+            {t("skip")}
+          </Button>
+          <Button variant="outlined" fullWidth onClick={handleAlreadyKnow}>
+            {t("iKnow")}
+          </Button>
+          <Button variant="contained" fullWidth onClick={handleNeedToLearn}>
+            {t("needToLearn")}
+          </Button>
+        </Stack>
+      </StudyActionBar>
+    </>
   );
 }

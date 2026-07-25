@@ -13,6 +13,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { ReviewRating } from "@/entities/word";
 import { markReviewResultAction } from "@/entities/word/api/word-actions";
+import { STUDY_ACTION_BAR_OFFSET, StudyActionBar } from "@/shared/ui/StudyActionBar";
 
 // Mirrors ts-fsrs `Rating` (Again/Hard/Good/Easy) without importing the
 // library into the client bundle — the numbers are the contract.
@@ -115,112 +116,116 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
   }
 
   return (
-    <Stack spacing={3}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography variant="h1">{t("dailyReview")}</Typography>
-        <Typography variant="caption" color="text.secondary">
-          {doneCount + 1} / {total}
-        </Typography>
-      </Stack>
+    <>
+      <Stack spacing={3} sx={{ pb: STUDY_ACTION_BAR_OFFSET }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Typography variant="h1">{t("dailyReview")}</Typography>
+          <Typography variant="caption" color="text.secondary">
+            {doneCount + 1} / {total}
+          </Typography>
+        </Stack>
 
-      <Card>
-        <CardContent>
-          <Stack spacing={2.5}>
-            <Stack spacing={0.5} alignItems="center">
-              <Typography variant="h1" textAlign="center">
-                {current.source_text}
-              </Typography>
-            </Stack>
-
-            {current.scene_description && (
-              <>
-                <Divider />
-                <Stack spacing={0.5}>
-                  <Typography variant="caption" color="text.secondary">
-                    {t("scene")}
-                  </Typography>
-                  <Typography variant="body1">
-                    {current.scene_description}
-                  </Typography>
-                </Stack>
-              </>
-            )}
-            {current.sound_association && (
-              <Stack spacing={0.5}>
-                <Typography variant="caption" color="text.secondary">
-                  {t("association")}
-                </Typography>
-                <Typography variant="body1">
-                  {current.sound_association}
+        <Card>
+          <CardContent>
+            <Stack spacing={2.5}>
+              <Stack spacing={0.5} alignItems="center">
+                <Typography variant="h1" textAlign="center">
+                  {current.source_text}
                 </Typography>
               </Stack>
-            )}
 
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              textAlign="center"
-            >
-              {t("whatIsThisWord")}
-            </Typography>
-
-            {isAnswerVisible && (
-              <>
-                <Divider />
-                <Stack alignItems="center" sx={{ py: 1 }}>
-                  <Typography variant="h2" color="primary">
-                    {current.target_text}
+              {current.scene_description && (
+                <>
+                  <Divider />
+                  <Stack spacing={0.5}>
+                    <Typography variant="caption" color="text.secondary">
+                      {t("scene")}
+                    </Typography>
+                    <Typography variant="body1">
+                      {current.scene_description}
+                    </Typography>
+                  </Stack>
+                </>
+              )}
+              {current.sound_association && (
+                <Stack spacing={0.5}>
+                  <Typography variant="caption" color="text.secondary">
+                    {t("association")}
+                  </Typography>
+                  <Typography variant="body1">
+                    {current.sound_association}
                   </Typography>
                 </Stack>
-              </>
-            )}
-          </Stack>
-        </CardContent>
-      </Card>
+              )}
 
-      {!isAnswerVisible ? (
-        <Button
-          variant="contained"
-          fullWidth
-          onClick={() => setIsAnswerVisible(true)}
-        >
-          {t("showAnswer")}
-        </Button>
-      ) : (
-        <Stack direction="row" spacing={1}>
-          <Button
-            variant="outlined"
-            color="error"
-            fullWidth
-            onClick={() => handleRate(AGAIN)}
-          >
-            {t("rateAgain")}
-          </Button>
-          <Button
-            variant="outlined"
-            color="warning"
-            fullWidth
-            onClick={() => handleRate(HARD)}
-          >
-            {t("rateHard")}
-          </Button>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                textAlign="center"
+              >
+                {t("whatIsThisWord")}
+              </Typography>
+
+              {isAnswerVisible && (
+                <>
+                  <Divider />
+                  <Stack alignItems="center" sx={{ py: 1 }}>
+                    <Typography variant="h2" color="primary">
+                      {current.target_text}
+                    </Typography>
+                  </Stack>
+                </>
+              )}
+            </Stack>
+          </CardContent>
+        </Card>
+      </Stack>
+
+      <StudyActionBar>
+        {!isAnswerVisible ? (
           <Button
             variant="contained"
             fullWidth
-            onClick={() => handleRate(GOOD)}
+            onClick={() => setIsAnswerVisible(true)}
           >
-            {t("rateGood")}
+            {t("showAnswer")}
           </Button>
-          <Button
-            variant="outlined"
-            color="success"
-            fullWidth
-            onClick={() => handleRate(EASY)}
-          >
-            {t("rateEasy")}
-          </Button>
-        </Stack>
-      )}
-    </Stack>
+        ) : (
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              color="error"
+              fullWidth
+              onClick={() => handleRate(AGAIN)}
+            >
+              {t("rateAgain")}
+            </Button>
+            <Button
+              variant="outlined"
+              color="warning"
+              fullWidth
+              onClick={() => handleRate(HARD)}
+            >
+              {t("rateHard")}
+            </Button>
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={() => handleRate(GOOD)}
+            >
+              {t("rateGood")}
+            </Button>
+            <Button
+              variant="outlined"
+              color="success"
+              fullWidth
+              onClick={() => handleRate(EASY)}
+            >
+              {t("rateEasy")}
+            </Button>
+          </Stack>
+        )}
+      </StudyActionBar>
+    </>
   );
 }

@@ -21,6 +21,7 @@ import {
   StepSceneCreation,
   StepSoundEncoding,
 } from "./encoding-steps";
+import { STUDY_ACTION_BAR_OFFSET } from "@/shared/ui/StudyActionBar";
 
 type EncodingModeProps = {
   list: List;
@@ -181,7 +182,7 @@ export function EncodingMode({ list, initialWords }: EncodingModeProps) {
   const limitSec = getEncodingTimeLimit(current) ?? 10;
 
   return (
-    <Stack spacing={3}>
+    <Stack spacing={3} sx={{ pb: STUDY_ACTION_BAR_OFFSET }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} onClick={goBack}>
           {t("back")}

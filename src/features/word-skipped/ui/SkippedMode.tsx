@@ -22,6 +22,7 @@ import {
   StepSceneCreation,
   StepSoundEncoding,
 } from "@/features/word-encoding/ui/encoding-steps";
+import { STUDY_ACTION_BAR_OFFSET } from "@/shared/ui/StudyActionBar";
 
 type SkippedModeProps = {
   list: List;
@@ -203,7 +204,7 @@ export function SkippedMode({ list, initialWords }: SkippedModeProps) {
   const limitSec = getEncodingTimeLimit(current) ?? 15;
 
   return (
-    <Stack spacing={3}>
+    <Stack spacing={3} sx={{ pb: STUDY_ACTION_BAR_OFFSET }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} onClick={goBack}>
           {t("back")}

@@ -15,6 +15,7 @@ import type { List } from "@/entities/list";
 import type { Word } from "@/entities/word/model/types";
 import { markRecallResultAction } from "@/entities/word/api/word-actions";
 import { PronounceButton } from "@/shared/ui/PronounceButton";
+import { STUDY_ACTION_BAR_OFFSET, StudyActionBar } from "@/shared/ui/StudyActionBar";
 
 const TOTAL_ROUNDS = 6;
 const RECALL_STATUSES = ["encoded", "learning", "weak"] as const;
@@ -113,78 +114,82 @@ export function RecallMode({ list, initialWords }: RecallModeProps) {
   }
 
   return (
-    <Stack spacing={3}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} onClick={goBack}>
-          {t("back")}
-        </Button>
-        <Stack alignItems="flex-end" spacing={0}>
-          <Typography variant="caption" color="text.secondary">
-            {doneCount + 1} / {total}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {fromLang} → {toLang} · {t("roundOf", { current: currentRound, total: TOTAL_ROUNDS })}
-          </Typography>
+    <>
+      <Stack spacing={3} sx={{ pb: STUDY_ACTION_BAR_OFFSET }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} onClick={goBack}>
+            {t("back")}
+          </Button>
+          <Stack alignItems="flex-end" spacing={0}>
+            <Typography variant="caption" color="text.secondary">
+              {doneCount + 1} / {total}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {fromLang} → {toLang} · {t("roundOf", { current: currentRound, total: TOTAL_ROUNDS })}
+            </Typography>
+          </Stack>
         </Stack>
-      </Stack>
 
-      <Card>
-        <CardContent>
-          <Stack spacing={2.5}>
-            <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
-              <Typography variant="h1" textAlign="center">
-                {prompt}
+        <Card>
+          <CardContent>
+            <Stack spacing={2.5}>
+              <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
+                <Typography variant="h1" textAlign="center">
+                  {prompt}
+                </Typography>
+                {!isForward && (
+                  <PronounceButton text={prompt} lang={list.targetLanguage} />
+                )}
+              </Stack>
+              {isForward && current?.sceneDescription && (
+                <>
+                  <Divider />
+                  <Stack spacing={0.5}>
+                    <Typography variant="caption" color="text.secondary">{t("scene")}</Typography>
+                    <Typography variant="body1">{current.sceneDescription}</Typography>
+                  </Stack>
+                </>
+              )}
+              {isForward && current?.soundAssociation && (
+                <Stack spacing={0.5}>
+                  <Typography variant="caption" color="text.secondary">{t("association")}</Typography>
+                  <Typography variant="body1">{current.soundAssociation}</Typography>
+                </Stack>
+              )}
+              <Typography variant="body2" color="text.secondary" textAlign="center">
+                {t("whatIsThisWord")}
               </Typography>
-              {!isForward && (
-                <PronounceButton text={prompt} lang={list.targetLanguage} />
+              {isAnswerVisible && (
+                <>
+                  <Divider />
+                  <Stack alignItems="center" sx={{ py: 1 }}>
+                    <Typography variant="h2" color="primary">
+                      {answer}
+                    </Typography>
+                  </Stack>
+                </>
               )}
             </Stack>
-            {isForward && current?.sceneDescription && (
-              <>
-                <Divider />
-                <Stack spacing={0.5}>
-                  <Typography variant="caption" color="text.secondary">{t("scene")}</Typography>
-                  <Typography variant="body1">{current.sceneDescription}</Typography>
-                </Stack>
-              </>
-            )}
-            {isForward && current?.soundAssociation && (
-              <Stack spacing={0.5}>
-                <Typography variant="caption" color="text.secondary">{t("association")}</Typography>
-                <Typography variant="body1">{current.soundAssociation}</Typography>
-              </Stack>
-            )}
-            <Typography variant="body2" color="text.secondary" textAlign="center">
-              {t("whatIsThisWord")}
-            </Typography>
-            {isAnswerVisible && (
-              <>
-                <Divider />
-                <Stack alignItems="center" sx={{ py: 1 }}>
-                  <Typography variant="h2" color="primary">
-                    {answer}
-                  </Typography>
-                </Stack>
-              </>
-            )}
-          </Stack>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </Stack>
 
-      {!isAnswerVisible ? (
-        <Button variant="contained" fullWidth onClick={() => setIsAnswerVisible(true)}>
-          {t("showAnswer")}
-        </Button>
-      ) : (
-        <Stack spacing={1.5}>
-          <Button variant="contained" fullWidth onClick={handleRemembered}>
-            {t("remembered")}
+      <StudyActionBar>
+        {!isAnswerVisible ? (
+          <Button variant="contained" fullWidth onClick={() => setIsAnswerVisible(true)}>
+            {t("showAnswer")}
           </Button>
-          <Button variant="outlined" fullWidth onClick={handleForgot}>
-            {t("didntRemember")}
-          </Button>
-        </Stack>
-      )}
-    </Stack>
+        ) : (
+          <Stack direction="row" spacing={1}>
+            <Button variant="outlined" fullWidth onClick={handleForgot}>
+              {t("didntRemember")}
+            </Button>
+            <Button variant="contained" fullWidth onClick={handleRemembered}>
+              {t("remembered")}
+            </Button>
+          </Stack>
+        )}
+      </StudyActionBar>
+    </>
   );
 }

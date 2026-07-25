@@ -13,6 +13,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { PatternSentence, ReviewRating } from "@/entities/pattern";
 import { markSentenceReviewResultAction } from "@/entities/pattern/api/pattern-actions";
+import { STUDY_ACTION_BAR_OFFSET, StudyActionBar } from "@/shared/ui/StudyActionBar";
 
 // Mirrors ts-fsrs `Rating` (Again/Hard/Good/Easy) without importing the
 // library into the client bundle — the numbers are the contract.
@@ -102,93 +103,97 @@ export function PatternSpacedReview({
   }
 
   return (
-    <Stack spacing={3}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography variant="h1">{t("dailyReview")}</Typography>
-        <Typography variant="caption" color="text.secondary">
-          {doneCount + 1} / {total}
-        </Typography>
+    <>
+      <Stack spacing={3} sx={{ pb: STUDY_ACTION_BAR_OFFSET }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Typography variant="h1">{t("dailyReview")}</Typography>
+          <Typography variant="caption" color="text.secondary">
+            {doneCount + 1} / {total}
+          </Typography>
+        </Stack>
+
+        <Card>
+          <CardContent>
+            <Stack spacing={2.5}>
+              <Stack spacing={0.5} alignItems="center">
+                <Typography variant="caption" color="text.secondary">
+                  {t("translateToEnglish")}
+                </Typography>
+                <Typography variant="h1" textAlign="center">
+                  {current.sourceText}
+                </Typography>
+              </Stack>
+
+              {isAnswerVisible && (
+                <>
+                  <Divider />
+                  <Stack spacing={0.5} alignItems="center">
+                    <Typography variant="h2" color="primary" textAlign="center">
+                      {current.targetText}
+                    </Typography>
+                    {current.comment && (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        textAlign="center"
+                        sx={{ mt: 0.5 }}
+                      >
+                        {current.comment}
+                      </Typography>
+                    )}
+                  </Stack>
+                </>
+              )}
+            </Stack>
+          </CardContent>
+        </Card>
       </Stack>
 
-      <Card>
-        <CardContent>
-          <Stack spacing={2.5}>
-            <Stack spacing={0.5} alignItems="center">
-              <Typography variant="caption" color="text.secondary">
-                {t("translateToEnglish")}
-              </Typography>
-              <Typography variant="h1" textAlign="center">
-                {current.sourceText}
-              </Typography>
-            </Stack>
-
-            {isAnswerVisible && (
-              <>
-                <Divider />
-                <Stack spacing={0.5} alignItems="center">
-                  <Typography variant="h2" color="primary" textAlign="center">
-                    {current.targetText}
-                  </Typography>
-                  {current.comment && (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      textAlign="center"
-                      sx={{ mt: 0.5 }}
-                    >
-                      {current.comment}
-                    </Typography>
-                  )}
-                </Stack>
-              </>
-            )}
-          </Stack>
-        </CardContent>
-      </Card>
-
-      {!isAnswerVisible ? (
-        <Button
-          variant="contained"
-          fullWidth
-          onClick={() => setIsAnswerVisible(true)}
-        >
-          {t("showAnswer")}
-        </Button>
-      ) : (
-        <Stack direction="row" spacing={1}>
-          <Button
-            variant="outlined"
-            color="error"
-            fullWidth
-            onClick={() => handleRate(AGAIN)}
-          >
-            {t("rateAgain")}
-          </Button>
-          <Button
-            variant="outlined"
-            color="warning"
-            fullWidth
-            onClick={() => handleRate(HARD)}
-          >
-            {t("rateHard")}
-          </Button>
+      <StudyActionBar>
+        {!isAnswerVisible ? (
           <Button
             variant="contained"
             fullWidth
-            onClick={() => handleRate(GOOD)}
+            onClick={() => setIsAnswerVisible(true)}
           >
-            {t("rateGood")}
+            {t("showAnswer")}
           </Button>
-          <Button
-            variant="outlined"
-            color="success"
-            fullWidth
-            onClick={() => handleRate(EASY)}
-          >
-            {t("rateEasy")}
-          </Button>
-        </Stack>
-      )}
-    </Stack>
+        ) : (
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              color="error"
+              fullWidth
+              onClick={() => handleRate(AGAIN)}
+            >
+              {t("rateAgain")}
+            </Button>
+            <Button
+              variant="outlined"
+              color="warning"
+              fullWidth
+              onClick={() => handleRate(HARD)}
+            >
+              {t("rateHard")}
+            </Button>
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={() => handleRate(GOOD)}
+            >
+              {t("rateGood")}
+            </Button>
+            <Button
+              variant="outlined"
+              color="success"
+              fullWidth
+              onClick={() => handleRate(EASY)}
+            >
+              {t("rateEasy")}
+            </Button>
+          </Stack>
+        )}
+      </StudyActionBar>
+    </>
   );
 }

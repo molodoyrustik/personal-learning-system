@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { PatternSentence } from "@/entities/pattern";
+import { STUDY_ACTION_BAR_OFFSET, StudyActionBar } from "@/shared/ui/StudyActionBar";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -221,99 +222,103 @@ export function SentencePracticeFlow({
   // ---------------------------------------------------------------------------
 
   return (
-    <Stack spacing={3}>
-      {/* Header row */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Button
-          variant="text"
-          size="small"
-          sx={{ px: 0, minHeight: "auto" }}
-          onClick={handleBack}
-        >
-          {tCommon("back")}
-        </Button>
-        <Stack alignItems="flex-end" spacing={0.25}>
-          {phase === "prompt" && (
-            <Chip
-              label={`${secondsLeft}s`}
-              size="small"
-              color={secondsLeft <= 1 ? "error" : "default"}
-              variant="outlined"
-            />
-          )}
-          <Typography variant="caption" color="text.secondary">
-            {doneCount + 1} / {total}
-          </Typography>
+    <>
+      <Stack spacing={3} sx={{ pb: STUDY_ACTION_BAR_OFFSET }}>
+        {/* Header row */}
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Button
+            variant="text"
+            size="small"
+            sx={{ px: 0, minHeight: "auto" }}
+            onClick={handleBack}
+          >
+            {tCommon("back")}
+          </Button>
+          <Stack alignItems="flex-end" spacing={0.25}>
+            {phase === "prompt" && (
+              <Chip
+                label={`${secondsLeft}s`}
+                size="small"
+                color={secondsLeft <= 1 ? "error" : "default"}
+                variant="outlined"
+              />
+            )}
+            <Typography variant="caption" color="text.secondary">
+              {doneCount + 1} / {total}
+            </Typography>
+          </Stack>
         </Stack>
+
+        {/* Sentence card */}
+        <Card>
+          <CardContent>
+            <Stack spacing={2.5}>
+              {/* Source (RU) */}
+              <Stack spacing={0.5} alignItems="center">
+                <Typography variant="caption" color="text.secondary">
+                  {t("translateToEnglish")}
+                </Typography>
+                <Typography variant="h1" textAlign="center">
+                  {current.sourceText}
+                </Typography>
+              </Stack>
+
+              {/* Answer (revealed after timer or manual Show Answer) */}
+              {isAnswerVisible && (
+                <>
+                  <Divider />
+                  <Stack spacing={0.5} alignItems="center">
+                    {phase === "answer-auto" && (
+                      <Typography variant="caption" color="error">
+                        {t("timeIsUp")}
+                      </Typography>
+                    )}
+                    <Typography variant="h2" color="primary" textAlign="center">
+                      {current.targetText}
+                    </Typography>
+                    {current.comment && (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        textAlign="center"
+                        sx={{ mt: 0.5 }}
+                      >
+                        {current.comment}
+                      </Typography>
+                    )}
+                  </Stack>
+                </>
+              )}
+            </Stack>
+          </CardContent>
+        </Card>
       </Stack>
 
-      {/* Sentence card */}
-      <Card>
-        <CardContent>
-          <Stack spacing={2.5}>
-            {/* Source (RU) */}
-            <Stack spacing={0.5} alignItems="center">
-              <Typography variant="caption" color="text.secondary">
-                {t("translateToEnglish")}
-              </Typography>
-              <Typography variant="h1" textAlign="center">
-                {current.sourceText}
-              </Typography>
-            </Stack>
-
-            {/* Answer (revealed after timer or manual Show Answer) */}
-            {isAnswerVisible && (
-              <>
-                <Divider />
-                <Stack spacing={0.5} alignItems="center">
-                  {phase === "answer-auto" && (
-                    <Typography variant="caption" color="error">
-                      {t("timeIsUp")}
-                    </Typography>
-                  )}
-                  <Typography variant="h2" color="primary" textAlign="center">
-                    {current.targetText}
-                  </Typography>
-                  {current.comment && (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      textAlign="center"
-                      sx={{ mt: 0.5 }}
-                    >
-                      {current.comment}
-                    </Typography>
-                  )}
-                </Stack>
-              </>
-            )}
-          </Stack>
-        </CardContent>
-      </Card>
-
       {/* Action buttons */}
-      {phase === "prompt" && (
-        <Button variant="contained" fullWidth onClick={handleShowAnswer}>
-          {t("showAnswer")}
-        </Button>
-      )}
-
-      {phase === "answer-manual" && (
-        <Stack spacing={1.5}>
-          <Button variant="contained" fullWidth onClick={handleCorrect}>
-            {t("correct")}
+      <StudyActionBar>
+        {phase === "prompt" && (
+          <Button variant="contained" fullWidth onClick={handleShowAnswer}>
+            {t("showAnswer")}
           </Button>
-          <Button variant="outlined" fullWidth onClick={handleMistake}>
-            {t("mistake")}
-          </Button>
-        </Stack>
-      )}
+        )}
 
-      {phase === "answer-auto" && (
-        <Button variant="outlined" fullWidth onClick={moveToNext}>
-          {t("next")}
-        </Button>
-      )}
-    </Stack>
+        {phase === "answer-manual" && (
+          <Stack direction="row" spacing={1}>
+            <Button variant="outlined" fullWidth onClick={handleMistake}>
+              {t("mistake")}
+            </Button>
+            <Button variant="contained" fullWidth onClick={handleCorrect}>
+              {t("correct")}
+            </Button>
+          </Stack>
+        )}
+
+        {phase === "answer-auto" && (
+          <Button variant="outlined" fullWidth onClick={moveToNext}>
+            {t("next")}
+          </Button>
+        )}
+      </StudyActionBar>
+    </>
   );
 }

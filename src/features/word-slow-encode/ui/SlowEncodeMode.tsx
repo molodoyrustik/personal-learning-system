@@ -18,6 +18,7 @@ import {
   StepSceneCreation,
   StepSoundEncoding,
 } from "@/features/word-encoding/ui/encoding-steps";
+import { STUDY_ACTION_BAR_OFFSET } from "@/shared/ui/StudyActionBar";
 
 type SlowEncodeModeProps = {
   list: List;
@@ -125,7 +126,7 @@ export function SlowEncodeMode({ list, initialWords }: SlowEncodeModeProps) {
   if (!current && doneCount > 0) return <CompletionState onBack={goBack} onNext={encodedCount > 0 ? goToRecall : undefined} />;
 
   return (
-    <Stack spacing={3}>
+    <Stack spacing={3} sx={{ pb: STUDY_ACTION_BAR_OFFSET }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} onClick={goBack}>
           {t("back")}

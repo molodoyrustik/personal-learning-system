@@ -11,6 +11,7 @@ import {
 import { useTranslations } from "next-intl";
 import type { Word } from "@/entities/word/model/types";
 import { PronounceButton } from "@/shared/ui/PronounceButton";
+import { StudyActionBar } from "@/shared/ui/StudyActionBar";
 
 export function StepImageCheck({
   word,
@@ -48,14 +49,16 @@ export function StepImageCheck({
           </Stack>
         </CardContent>
       </Card>
-      <Stack spacing={1.5}>
-        <Button variant="contained" fullWidth onClick={onHasImage}>
-          {t("gotIt")}
-        </Button>
-        <Button variant="text" fullWidth color="inherit" onClick={onSkip}>
-          {t("skip")}
-        </Button>
-      </Stack>
+      <StudyActionBar>
+        <Stack direction="row" spacing={1}>
+          <Button variant="text" fullWidth color="inherit" onClick={onSkip}>
+            {t("skip")}
+          </Button>
+          <Button variant="contained" fullWidth onClick={onHasImage}>
+            {t("gotIt")}
+          </Button>
+        </Stack>
+      </StudyActionBar>
     </>
   );
 }
@@ -108,14 +111,16 @@ export function StepSoundEncoding({
           </Stack>
         </CardContent>
       </Card>
-      <Stack spacing={1.5}>
-        <Button variant="contained" fullWidth onClick={onNext}>
-          {t("next")}
-        </Button>
-        <Button variant="text" fullWidth color="inherit" onClick={onSkip}>
-          {t("skip")}
-        </Button>
-      </Stack>
+      <StudyActionBar>
+        <Stack direction="row" spacing={1}>
+          <Button variant="text" fullWidth color="inherit" onClick={onSkip}>
+            {t("skip")}
+          </Button>
+          <Button variant="contained" fullWidth onClick={onNext}>
+            {t("next")}
+          </Button>
+        </Stack>
+      </StudyActionBar>
     </>
   );
 }
@@ -156,14 +161,16 @@ export function StepSceneCreation({
           </Stack>
         </CardContent>
       </Card>
-      <Stack spacing={1.5}>
-        <Button variant="contained" fullWidth onClick={onSave}>
-          {t("done2")}
-        </Button>
-        <Button variant="text" fullWidth color="inherit" onClick={onSkip}>
-          {t("skip")}
-        </Button>
-      </Stack>
+      <StudyActionBar>
+        <Stack direction="row" spacing={1}>
+          <Button variant="text" fullWidth color="inherit" onClick={onSkip}>
+            {t("skip")}
+          </Button>
+          <Button variant="contained" fullWidth onClick={onSave}>
+            {t("done2")}
+          </Button>
+        </Stack>
+      </StudyActionBar>
     </>
   );
 }
@@ -222,9 +229,11 @@ export function StepFixation({
           </Stack>
         </CardContent>
       </Card>
-      <Button variant="contained" fullWidth onClick={onDone}>
-        {t("done")}
-      </Button>
+      <StudyActionBar>
+        <Button variant="contained" fullWidth onClick={onDone}>
+          {t("done")}
+        </Button>
+      </StudyActionBar>
     </>
   );
 }

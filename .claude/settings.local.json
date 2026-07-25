@@ -18,7 +18,9 @@
       "Bash(supabase migration *)",
       "Bash(python3 *)",
       "Bash(npm run *)",
-      "Bash(npx --yes ts-prune)"
+      "Bash(npx --yes ts-prune)",
+      "Bash(npx eslint *)",
+      "Bash(git stash *)"
     ]
   },
   "enabledMcpjsonServers": [
