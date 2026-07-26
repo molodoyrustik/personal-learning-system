@@ -2,25 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import type { Grade } from "ts-fsrs";
 import { nowISO } from "@/shared/lib/date";
-import {
-  buildCardInput,
-  type Card,
-  createEmptyCard,
-  type FsrsColumns,
-  fsrsColumnsFromCard,
-  isGraduated,
-  Rating,
-  scheduler,
-} from "@/shared/lib/fsrs";
 import { generateId } from "@/shared/lib/ids";
 import { createClient } from "@/shared/lib/supabase/server";
 import type { PracticeMode } from "@/shared/model/patterns-store";
-import type { ReviewRating } from "../model/types";
 
-// Clean Full Practice passes required before a sentence graduates into
-// FSRS Review. Mirrors words' RecallMode round count (there: 6).
+// Clean Full Practice passes required before a sentence graduates to "known".
+// Mirrors words' RecallMode round count (there: 6).
 const TOTAL_FULL_PRACTICE_PASSES = 3;
 
 async function getSupabase() {
@@ -30,18 +18,6 @@ async function getSupabase() {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
   return { supabase, userId: user.id };
-}
-
-function rowToCard(row: FsrsColumns & { last_practiced_at: string | null }) {
-  return buildCardInput(row, row.last_practiced_at);
-}
-
-function cardToUpdate(card: Card, now: Date) {
-  return {
-    ...fsrsColumnsFromCard(card),
-    last_practiced_at: now.toISOString(),
-    updated_at: nowISO(),
-  };
 }
 
 export async function createPatternWithSentences(params: {
@@ -140,14 +116,7 @@ export async function resetPatternProgressAction(
     .update({
       status: "new",
       last_practiced_at: null,
-      next_review_at: null,
       full_practice_success_count: 0,
-      fsrs_stability: null,
-      fsrs_difficulty: null,
-      fsrs_state: null,
-      fsrs_reps: 0,
-      fsrs_lapses: 0,
-      fsrs_learning_steps: 0,
       updated_at: nowISO(),
     })
     .eq("pattern_id", patternId)
@@ -166,97 +135,72 @@ export async function deletePatternAction(patternId: string) {
   redirect("/patterns");
 }
 
-export async function markSentenceCorrectAction(
-  sentenceId: string,
+// Applies status transitions for a whole practice session in one go. Called
+// only once the user has gone through every sentence in the queue — quitting
+// partway through (Back button, closing the tab) discards the session
+// entirely, so a pattern's statuses only ever change as a result of a
+// complete First Pass / Review Marked / Full Practice pass, never a partial
+// one. This keeps Full Practice history and queue membership consistent:
+// every recorded run — and every status change — reflects the whole list.
+export async function commitPracticeSessionAction(
   mode: PracticeMode,
+  results: { sentenceId: string; correct: boolean }[],
 ) {
   const { supabase } = await getSupabase();
+  const now = nowISO();
 
   if (mode === "full-practice") {
-    const { data: sentence } = await supabase
-      .from("pattern_sentences")
-      .select("full_practice_success_count")
-      .eq("id", sentenceId)
-      .single();
-    const fullPracticeSuccessCount =
-      (sentence?.full_practice_success_count ?? 0) + 1;
+    const correctIds = results.filter((r) => r.correct).map((r) => r.sentenceId);
+    const { data: rows } = correctIds.length
+      ? await supabase
+          .from("pattern_sentences")
+          .select("id, full_practice_success_count")
+          .in("id", correctIds)
+      : { data: [] };
+    const successCountById = new Map(
+      (rows ?? []).map((r) => [
+        r.id as string,
+        r.full_practice_success_count as number,
+      ]),
+    );
 
-    if (fullPracticeSuccessCount >= TOTAL_FULL_PRACTICE_PASSES) {
-      // Enough clean Full Practice passes — graduate into FSRS Review with
-      // a first "Good" review seeding the card.
-      const now = new Date();
-      const { card } = scheduler.next(createEmptyCard(now), now, Rating.Good);
-      await supabase
-        .from("pattern_sentences")
-        .update({
-          full_practice_success_count: fullPracticeSuccessCount,
-          status: "memorized",
-          next_review_at: card.due.toISOString(),
-          ...cardToUpdate(card, now),
-        })
-        .eq("id", sentenceId);
-      return;
-    }
-
-    await supabase
-      .from("pattern_sentences")
-      .update({
-        full_practice_success_count: fullPracticeSuccessCount,
-        last_practiced_at: nowISO(),
-        updated_at: nowISO(),
-      })
-      .eq("id", sentenceId);
+    await Promise.all(
+      results.map(({ sentenceId, correct }) => {
+        if (!correct) {
+          return supabase
+            .from("pattern_sentences")
+            .update({ status: "marked", last_practiced_at: now, updated_at: now })
+            .eq("id", sentenceId);
+        }
+        const successCount = (successCountById.get(sentenceId) ?? 0) + 1;
+        return supabase
+          .from("pattern_sentences")
+          .update({
+            full_practice_success_count: successCount,
+            status:
+              successCount >= TOTAL_FULL_PRACTICE_PASSES ? "known" : "learning",
+            last_practiced_at: now,
+            updated_at: now,
+          })
+          .eq("id", sentenceId);
+      }),
+    );
     return;
   }
 
-  await supabase
-    .from("pattern_sentences")
-    .update({
-      status: "learning",
-      last_practiced_at: nowISO(),
-      updated_at: nowISO(),
-    })
-    .eq("id", sentenceId);
-}
-
-export async function markSentenceMistakeAction(sentenceId: string) {
-  const { supabase } = await getSupabase();
-  await supabase
-    .from("pattern_sentences")
-    .update({
-      status: "marked",
-      last_practiced_at: nowISO(),
-      updated_at: nowISO(),
-    })
-    .eq("id", sentenceId);
-}
-
-export async function markSentenceReviewResultAction(
-  sentenceId: string,
-  rating: ReviewRating,
-) {
-  const { supabase } = await getSupabase();
-  const { data: sentence } = await supabase
-    .from("pattern_sentences")
-    .select(
-      "fsrs_stability, fsrs_difficulty, fsrs_state, fsrs_reps, fsrs_lapses, fsrs_learning_steps, next_review_at, last_practiced_at",
-    )
-    .eq("id", sentenceId)
-    .single();
-  if (!sentence) return;
-
-  const now = new Date();
-  const { card } = scheduler.next(rowToCard(sentence), now, rating as Grade);
-  const graduated = isGraduated(card);
-
-  await supabase
-    .from("pattern_sentences")
-    .update({
-      status: graduated ? "known" : "reviewing",
-      next_review_at: graduated ? null : card.due.toISOString(),
-      ...cardToUpdate(card, now),
-    })
-    .eq("id", sentenceId);
+  // First Pass / Review Marked: correct -> learning, mistake -> marked.
+  await Promise.all(
+    results.map(({ sentenceId, correct }) =>
+      supabase
+        .from("pattern_sentences")
+        .update({
+          status: correct ? "learning" : "marked",
+          last_practiced_at: now,
+          updated_at: now,
+        })
+        .eq("id", sentenceId),
+    ),
+  );
 }
 
 export async function addFullRunAction(patternId: string, durationSec: number) {

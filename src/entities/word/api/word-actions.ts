@@ -133,58 +133,99 @@ export async function skipWordAction(wordId: string) {
     .eq("id", wordId);
 }
 
-export async function markRecallResultAction(
-  wordId: string,
-  remembered: boolean,
+// Applies Recall results for a whole session in one go. Called only once the
+// user has gone through every word in the queue — quitting partway through
+// discards the session entirely, so a word's recall progress only ever
+// changes as a result of a complete Recall pass, never a partial one.
+export async function commitRecallResultsAction(
+  results: { wordId: string; remembered: boolean }[],
 ) {
   const supabase = await getSupabase();
-  const { data: word } = await supabase
-    .from("words")
-    .select("recall_success_count, recall_fail_count")
-    .eq("id", wordId)
-    .single();
-  if (!word) return;
+  const now = nowISO();
 
-  if (remembered) {
-    const recallSuccessCount = word.recall_success_count + 1;
-    if (recallSuccessCount >= 6) {
-      // Word graduates out of Recall — seed its FSRS card with a first
-      // "Good" review (it just proved itself over 6 rounds) and hand it
-      // off to Review mode for long-term spaced scheduling.
-      const now = new Date();
-      const { card } = scheduler.next(createEmptyCard(now), now, Rating.Good);
-      await supabase
+  const { data: rows } = await supabase
+    .from("words")
+    .select("id, recall_success_count")
+    .in(
+      "id",
+      results.map((r) => r.wordId),
+    );
+  const successCountById = new Map(
+    (rows ?? []).map((r) => [r.id as string, r.recall_success_count as number]),
+  );
+
+  await Promise.all(
+    results.map(({ wordId, remembered }) => {
+      if (remembered) {
+        const recallSuccessCount = (successCountById.get(wordId) ?? 0) + 1;
+        if (recallSuccessCount >= 6) {
+          // Word graduates out of Recall — seed its FSRS card with a first
+          // "Good" review (it just proved itself over 6 rounds) and hand it
+          // off to Review mode for long-term spaced scheduling.
+          const graduatedAt = new Date();
+          const { card } = scheduler.next(
+            createEmptyCard(graduatedAt),
+            graduatedAt,
+            Rating.Good,
+          );
+          return supabase
+            .from("words")
+            .update({
+              recall_success_count: recallSuccessCount,
+              status: "memorized",
+              next_review_at: card.due.toISOString(),
+              ...cardToUpdate(card, graduatedAt),
+            })
+            .eq("id", wordId);
+        }
+        return supabase
+          .from("words")
+          .update({
+            recall_success_count: recallSuccessCount,
+            status: "learning",
+            last_recalled_at: now,
+            updated_at: now,
+          })
+          .eq("id", wordId);
+      }
+
+      // A slip on an already-encoded word — route to the dedicated Recall
+      // Mistakes queue instead of straight back into Recall, so it can't
+      // silently rack up rounds without ever being corrected.
+      return supabase
         .from("words")
         .update({
-          recall_success_count: recallSuccessCount,
-          status: "memorized",
-          next_review_at: card.due.toISOString(),
-          ...cardToUpdate(card, now),
+          status: "marked",
+          last_recalled_at: now,
+          updated_at: now,
         })
         .eq("id", wordId);
-    } else {
-      await supabase
+    }),
+  );
+}
+
+// Applies Recall Mistakes results for a whole session in one go, same
+// all-or-nothing rule as commitRecallResultsAction. Fixed words go back to
+// "learning" (recall_success_count untouched — they resume Recall from
+// wherever they left off); still-wrong words stay "marked".
+export async function commitRecallMistakesResultsAction(
+  results: { wordId: string; remembered: boolean }[],
+) {
+  const supabase = await getSupabase();
+  const now = nowISO();
+
+  await Promise.all(
+    results.map(({ wordId, remembered }) =>
+      supabase
         .from("words")
         .update({
-          recall_success_count: recallSuccessCount,
-          status: "learning",
-          last_recalled_at: nowISO(),
-          updated_at: nowISO(),
+          status: remembered ? "learning" : "marked",
+          last_recalled_at: now,
+          updated_at: now,
         })
-        .eq("id", wordId);
-    }
-  } else {
-    const recallFailCount = word.recall_fail_count + 1;
-    await supabase
-      .from("words")
-      .update({
-        recall_fail_count: recallFailCount,
-        status: recallFailCount >= 2 ? "weak" : "learning",
-        last_recalled_at: nowISO(),
-        updated_at: nowISO(),
-      })
-      .eq("id", wordId);
-  }
+        .eq("id", wordId),
+    ),
+  );
 }
 
 export async function markReviewResultAction(

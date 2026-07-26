@@ -1,4 +1,3 @@
-import { nowISO } from "@/shared/lib/date";
 import { createClient } from "@/shared/lib/supabase/server";
 import type { Pattern, PatternRun, PatternSentence } from "../model/types";
 
@@ -21,14 +20,7 @@ function mapSentence(row: Record<string, unknown>): PatternSentence {
     comment: (row.comment as string | null) ?? null,
     status: row.status as PatternSentence["status"],
     lastPracticedAt: (row.last_practiced_at as string | null) ?? null,
-    nextReviewAt: (row.next_review_at as string | null) ?? null,
     fullPracticeSuccessCount: (row.full_practice_success_count as number) ?? 0,
-    fsrsStability: (row.fsrs_stability as number | null) ?? null,
-    fsrsDifficulty: (row.fsrs_difficulty as number | null) ?? null,
-    fsrsState: (row.fsrs_state as PatternSentence["fsrsState"]) ?? null,
-    fsrsReps: (row.fsrs_reps as number) ?? 0,
-    fsrsLapses: (row.fsrs_lapses as number) ?? 0,
-    fsrsLearningSteps: (row.fsrs_learning_steps as number) ?? 0,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -105,32 +97,4 @@ export async function getSentenceCountsByPatternIds(
     counts[row.pattern_id] = (counts[row.pattern_id] ?? 0) + 1;
   }
   return counts;
-}
-
-export async function getDueReviewSentencesByPatternId(
-  patternId: string,
-): Promise<PatternSentence[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("pattern_sentences")
-    .select("*")
-    .eq("pattern_id", patternId)
-    .in("status", ["memorized", "reviewing"])
-    .lte("next_review_at", nowISO())
-    .order("next_review_at");
-  if (error) throw error;
-  return data.map(mapSentence);
-}
-
-export async function getDueReviewSentenceCountByPatternId(
-  patternId: string,
-): Promise<number> {
-  const supabase = await createClient();
-  const { count } = await supabase
-    .from("pattern_sentences")
-    .select("*", { count: "exact", head: true })
-    .eq("pattern_id", patternId)
-    .in("status", ["memorized", "reviewing"])
-    .lte("next_review_at", nowISO());
-  return count ?? 0;
 }

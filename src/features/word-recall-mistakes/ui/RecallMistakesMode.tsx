@@ -13,34 +13,30 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { List } from "@/entities/list";
 import type { Word } from "@/entities/word/model/types";
-import { commitRecallResultsAction } from "@/entities/word/api/word-actions";
+import { commitRecallMistakesResultsAction } from "@/entities/word/api/word-actions";
 import { PronounceButton } from "@/shared/ui/PronounceButton";
 import { STUDY_ACTION_BAR_OFFSET, StudyActionBar } from "@/shared/ui/StudyActionBar";
 
 const TOTAL_ROUNDS = 6;
-const RECALL_STATUSES = ["encoded", "learning"] as const;
 
-type RecallModeProps = {
+type RecallMistakesModeProps = {
   list: List;
   initialWords: Word[];
 };
 
-export function RecallMode({ list, initialWords }: RecallModeProps) {
+export function RecallMistakesMode({ list, initialWords }: RecallMistakesModeProps) {
   const t = useTranslations("WordModes");
   const router = useRouter();
 
   const [queue, setQueue] = useState<Word[]>(() =>
-    initialWords.filter((w) =>
-      (RECALL_STATUSES as readonly string[]).includes(w.status),
-    ),
+    initialWords.filter((w) => w.status === "marked"),
   );
+  const [isAnswerVisible, setIsAnswerVisible] = useState(false);
   const [doneCount, setDoneCount] = useState(0);
-  const [memorizedCount, setMemorizedCount] = useState(0);
-  const [stillLearningCount, setStillLearningCount] = useState(0);
 
   // Collected locally for the whole session — flushed to
-  // commitRecallResultsAction only once the queue is fully drained. Quitting
-  // early (Back button, closing the tab) never persists anything.
+  // commitRecallMistakesResultsAction only once the queue is fully drained.
+  // Quitting early (Back button, closing the tab) never persists anything.
   const resultsRef = useRef<{ wordId: string; remembered: boolean }[]>([]);
 
   function goBack() { router.refresh(); router.push(`/lists/${list.id}`); }
@@ -48,9 +44,9 @@ export function RecallMode({ list, initialWords }: RecallModeProps) {
   const total = queue.length;
   const current = queue[0] ?? null;
 
-  // Even round (0,2,4): source → target. Odd round (1,3,5): target → source.
   const isForward = current ? current.recallSuccessCount % 2 === 0 : true;
   const prompt = current ? (isForward ? current.sourceText : current.targetText) : "";
+  const answer = current ? (isForward ? current.targetText : current.sourceText) : "";
   const fromLang = isForward ? list.sourceLanguage.toUpperCase() : list.targetLanguage.toUpperCase();
   const toLang = isForward ? list.targetLanguage.toUpperCase() : list.sourceLanguage.toUpperCase();
   const currentRound = current ? current.recallSuccessCount + 1 : 0;
@@ -58,30 +54,25 @@ export function RecallMode({ list, initialWords }: RecallModeProps) {
   // Notify once the whole queue finishes (skip if queue was always empty)
   useEffect(() => {
     if (doneCount > 0 && queue.length === 0) {
-      commitRecallResultsAction(resultsRef.current);
+      commitRecallMistakesResultsAction(resultsRef.current);
     }
   }, [doneCount, queue.length]);
 
   function moveToNext() {
     setQueue((q) => q.slice(1));
     setDoneCount((n) => n + 1);
+    setIsAnswerVisible(false);
   }
 
   function handleRemembered() {
     if (!current) return;
     resultsRef.current.push({ wordId: current.id, remembered: true });
-    if (current.recallSuccessCount + 1 >= TOTAL_ROUNDS) {
-      setMemorizedCount((n) => n + 1);
-    } else {
-      setStillLearningCount((n) => n + 1);
-    }
     moveToNext();
   }
 
   function handleForgot() {
     if (!current) return;
     resultsRef.current.push({ wordId: current.id, remembered: false });
-    setStillLearningCount((n) => n + 1);
     moveToNext();
   }
 
@@ -91,7 +82,7 @@ export function RecallMode({ list, initialWords }: RecallModeProps) {
         <Stack spacing={1} alignItems="center">
           <Typography variant="h2">{t("nothingToRecall")}</Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center">
-            {t("noWordsReadyForRecall")}
+            {t("noMarkedWords")}
           </Typography>
         </Stack>
         <Button variant="outlined" onClick={goBack}>{t("backToList")}</Button>
@@ -105,19 +96,10 @@ export function RecallMode({ list, initialWords }: RecallModeProps) {
         <Stack spacing={1} alignItems="center">
           <Typography variant="h2">{t("passComplete")}</Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center">
-            {memorizedCount > 0 && `${memorizedCount} ${t("memorized")}`}
-            {memorizedCount > 0 && stillLearningCount > 0 && " · "}
-            {stillLearningCount > 0 && `${stillLearningCount} ${t("stillLearning")}`}
+            {t("recallMistakesComplete")}
           </Typography>
         </Stack>
-        <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 320 }}>
-          {stillLearningCount > 0 && (
-            <Button variant="contained" fullWidth onClick={() => { window.location.href = `/lists/${list.id}/recall`; }}>
-              {t("toRecallAgain")}
-            </Button>
-          )}
-          <Button variant="outlined" fullWidth onClick={goBack}>{t("backToList")}</Button>
-        </Stack>
+        <Button variant="outlined" onClick={goBack}>{t("backToList")}</Button>
       </Stack>
     );
   }
@@ -150,38 +132,39 @@ export function RecallMode({ list, initialWords }: RecallModeProps) {
                   <PronounceButton text={prompt} lang={list.targetLanguage} />
                 )}
               </Stack>
-              {isForward && current?.sceneDescription && (
-                <>
-                  <Divider />
-                  <Stack spacing={0.5}>
-                    <Typography variant="caption" color="text.secondary">{t("scene")}</Typography>
-                    <Typography variant="body1">{current.sceneDescription}</Typography>
-                  </Stack>
-                </>
-              )}
-              {isForward && current?.soundAssociation && (
-                <Stack spacing={0.5}>
-                  <Typography variant="caption" color="text.secondary">{t("association")}</Typography>
-                  <Typography variant="body1">{current.soundAssociation}</Typography>
-                </Stack>
-              )}
               <Typography variant="body2" color="text.secondary" textAlign="center">
                 {t("whatIsThisWord")}
               </Typography>
+              {isAnswerVisible && (
+                <>
+                  <Divider />
+                  <Stack alignItems="center" sx={{ py: 1 }}>
+                    <Typography variant="h2" color="primary">
+                      {answer}
+                    </Typography>
+                  </Stack>
+                </>
+              )}
             </Stack>
           </CardContent>
         </Card>
       </Stack>
 
       <StudyActionBar>
-        <Stack direction="row" spacing={1}>
-          <Button variant="outlined" fullWidth onClick={handleForgot}>
-            {t("didntRemember")}
+        {!isAnswerVisible ? (
+          <Button variant="contained" fullWidth onClick={() => setIsAnswerVisible(true)}>
+            {t("showAnswer")}
           </Button>
-          <Button variant="contained" fullWidth onClick={handleRemembered}>
-            {t("remembered")}
-          </Button>
-        </Stack>
+        ) : (
+          <Stack direction="row" spacing={1}>
+            <Button variant="outlined" fullWidth onClick={handleForgot}>
+              {t("didntRemember")}
+            </Button>
+            <Button variant="contained" fullWidth onClick={handleRemembered}>
+              {t("remembered")}
+            </Button>
+          </Stack>
+        )}
       </StudyActionBar>
     </>
   );

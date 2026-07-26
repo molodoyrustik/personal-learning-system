@@ -5,7 +5,7 @@ export type WordStatus =
   | "skipped"
   | "encoded"
   | "learning"
-  | "weak"
+  | "marked"
   | "memorized"
   | "reviewing"
   | "known";
@@ -45,7 +45,6 @@ export type Word = {
   encodingAttemptCount: number;
   encodingAttemptRound: EncodingAttemptRound;
   recallSuccessCount: number;
-  recallFailCount: number;
   lastRecalledAt: string | null;
   nextReviewAt: string | null;
 

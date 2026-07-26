@@ -48,8 +48,9 @@ type PatternDetailsProps = {
   pattern: Pattern;
   sentences: PatternSentence[];
   runs: PatternRun[];
-  reviewCount: number;
   lessonHref?: string;
+  lessonId?: string;
+  courseId?: string;
 };
 
 // STATUS_LABELS built dynamically inside the component using t()
@@ -60,9 +61,7 @@ const STATUS_COLORS: Record<
 > = {
   new: "default",
   marked: "warning",
-  learning: "success",
-  memorized: "info",
-  reviewing: "secondary",
+  learning: "info",
   known: "success",
 };
 
@@ -77,18 +76,21 @@ export function PatternDetails({
   pattern,
   sentences,
   runs,
-  reviewCount,
   lessonHref,
+  lessonId,
+  courseId,
 }: PatternDetailsProps) {
   const t = useTranslations("Patterns");
   const tCommon = useTranslations("Common");
+  // Forwarded to every child route so "Back" from within a mode returns here
+  // with the lesson context still intact instead of losing it.
+  const lessonQuery =
+    lessonId && courseId ? `?lessonId=${lessonId}&courseId=${courseId}` : "";
 
   const STATUS_LABELS: Record<SentenceStatus, string> = {
     new: t("statusNew"),
     marked: t("statusMarked"),
     learning: t("statusLearning"),
-    memorized: t("statusMemorized"),
-    reviewing: t("statusReviewing"),
     known: t("statusKnown"),
   };
 
@@ -124,6 +126,10 @@ export function PatternDetails({
     () => getFullPracticeQueue(sentences, patternId).length,
     [sentences, patternId],
   );
+  // Full Practice is a single clean run over the whole learned set — it only
+  // unlocks once nothing is left in First Pass or Review Marked, so a run
+  // never has to skip sentences that haven't been triaged yet.
+  const fullPracticeUnlocked = firstPassCount === 0 && markedCount === 0;
 
   async function handleImport(imported: ImportedSentence[]) {
     await importSentencesAction(
@@ -140,26 +146,23 @@ export function PatternDetails({
     {
       label: t("firstPass"),
       description: t("firstPassDescription"),
-      href: `/patterns/${patternId}/first-pass`,
+      href: `/patterns/${patternId}/first-pass${lessonQuery}`,
       count: firstPassCount,
+      disabled: firstPassCount === 0,
     },
     {
       label: t("reviewMarked"),
       description: t("reviewMarkedDescription"),
-      href: `/patterns/${patternId}/review`,
+      href: `/patterns/${patternId}/review${lessonQuery}`,
       count: markedCount,
+      disabled: markedCount === 0,
     },
     {
       label: t("fullPractice"),
       description: t("fullPracticeDescription"),
-      href: `/patterns/${patternId}/full-practice`,
+      href: `/patterns/${patternId}/full-practice${lessonQuery}`,
       count: fullPracticeCount,
-    },
-    {
-      label: t("review"),
-      description: t("reviewDescription"),
-      href: `/patterns/${patternId}/spaced-review`,
-      count: reviewCount,
+      disabled: !fullPracticeUnlocked,
     },
   ] as const;
 
@@ -199,7 +202,7 @@ export function PatternDetails({
           >
             <MenuItem
               component={Link}
-              href={`/patterns/${patternId}/edit`}
+              href={`/patterns/${patternId}/edit${lessonQuery}`}
               onClick={closeMenu}
             >
               {tCommon("edit")}
@@ -241,14 +244,7 @@ export function PatternDetails({
             <Typography variant="h3">{t("summary")}</Typography>
             <Stack direction="row" flexWrap="wrap" gap={1}>
               {(
-                [
-                  "new",
-                  "marked",
-                  "learning",
-                  "memorized",
-                  "reviewing",
-                  "known",
-                ] as SentenceStatus[]
+                ["new", "marked", "learning", "known"] as SentenceStatus[]
               ).map((status) => {
                 const count = sentences.filter(
                   (s) => s.status === status,
@@ -273,18 +269,18 @@ export function PatternDetails({
           <Stack spacing={2}>
             <Typography variant="h3">{t("modes")}</Typography>
             <Stack spacing={1.5}>
-              {modes.map(({ label, description, href, count }) => (
+              {modes.map(({ label, description, href, count, disabled }) => (
                 <Link
                   key={href}
-                  href={count > 0 ? href : "#"}
+                  href={disabled ? "#" : href}
                   style={{ textDecoration: "none" }}
-                  aria-disabled={count === 0}
-                  onClick={(e) => count === 0 && e.preventDefault()}
+                  aria-disabled={disabled}
+                  onClick={(e) => disabled && e.preventDefault()}
                 >
                   <Button
                     variant="outlined"
                     fullWidth
-                    disabled={count === 0}
+                    disabled={disabled}
                     sx={{ justifyContent: "space-between", textAlign: "left" }}
                   >
                     <Stack alignItems="flex-start" spacing={0}>

@@ -50,7 +50,7 @@ const STATUS_COLORS: Record<
   skipped: "warning",
   encoded: "info",
   learning: "secondary",
-  weak: "warning",
+  marked: "warning",
   memorized: "success",
   reviewing: "success",
   known: "success",
@@ -67,7 +67,7 @@ export function ListDetails({ list, words, reviewCount, lessonHref }: ListDetail
     skipped: t("statusSkipped"),
     encoded: t("statusEncoded"),
     learning: t("statusLearning"),
-    weak: t("statusWeak"),
+    marked: t("statusMarked"),
     memorized: t("statusMemorized"),
     reviewing: t("statusReviewing"),
     known: t("statusKnown"),
@@ -96,9 +96,10 @@ export function ListDetails({ list, words, reviewCount, lessonHref }: ListDetail
   const skippedQueue = useMemo(() => words.filter(isInSkippedQueue), [words]);
   const slowEncodeQueue = useMemo(() => words.filter(isInSlowEncodeQueue), [words]);
   const recallQueue = useMemo(
-    () => words.filter((w) => w.status === "encoded" || w.status === "learning" || w.status === "weak"),
+    () => words.filter((w) => w.status === "encoded" || w.status === "learning"),
     [words],
   );
+  const markedQueue = useMemo(() => words.filter((w) => w.status === "marked"), [words]);
 
   const recallRounds = useMemo(
     () => Array.from({ length: 6 }, (_, i) => recallQueue.filter((w) => w.recallSuccessCount === i).length),
@@ -111,7 +112,7 @@ export function ListDetails({ list, words, reviewCount, lessonHref }: ListDetail
     { label: t("statusEncoded"), count: words.filter((w) => w.status === "encoded").length },
     { label: t("statusSkipped"), count: words.filter((w) => w.status === "skipped").length },
     { label: t("statusLearning"), count: words.filter((w) => w.status === "learning").length },
-    { label: t("statusWeak"), count: words.filter((w) => w.status === "weak").length },
+    { label: t("statusMarked"), count: words.filter((w) => w.status === "marked").length },
     { label: t("statusMemorized"), count: words.filter((w) => w.status === "memorized").length },
     { label: t("statusReviewing"), count: words.filter((w) => w.status === "reviewing").length },
     { label: t("statusKnown"), count: words.filter((w) => w.status === "known").length },
@@ -131,6 +132,13 @@ export function ListDetails({ list, words, reviewCount, lessonHref }: ListDetail
       detail: recallQueue.length > 0
         ? recallRounds.map((n, i) => `${([t("round1"), t("round2"), t("round3"), t("round4"), t("round5"), t("round6")])[i]}: ${n}`).filter((_, i) => recallRounds[i] > 0).join(" · ") || null
         : null,
+    },
+    {
+      label: t("recallMistakesMode"),
+      href: "recall-mistakes",
+      count: markedQueue.length,
+      active: markedQueue.length > 0,
+      detail: null,
     },
     { label: t("review"), href: "review", count: reviewCount, active: reviewCount > 0, detail: null },
   ];

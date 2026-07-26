@@ -23,7 +23,6 @@ export async function resetListProgressAction(listId: string): Promise<void> {
       encoding_attempt_count: 0,
       encoding_attempt_round: null,
       recall_success_count: 0,
-      recall_fail_count: 0,
       last_recalled_at: null,
       next_review_at: null,
       fsrs_stability: null,

@@ -18,7 +18,6 @@ function mapRow(row: Record<string, unknown>): Word {
     encodingAttemptRound:
       (row.encoding_attempt_round as Word["encodingAttemptRound"]) ?? null,
     recallSuccessCount: (row.recall_success_count as number) ?? 0,
-    recallFailCount: (row.recall_fail_count as number) ?? 0,
     lastRecalledAt: (row.last_recalled_at as string | null) ?? null,
     nextReviewAt: (row.next_review_at as string | null) ?? null,
     fsrsStability: (row.fsrs_stability as number | null) ?? null,

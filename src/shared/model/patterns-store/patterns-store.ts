@@ -30,15 +30,17 @@ export function getMarkedQueue(
   );
 }
 
-// Full Practice: learning sentences only.
-// 'marked' sentences are excluded — they belong to the dedicated Review Marked
-// mode. This keeps modes clearly separated: you fix marked sentences first,
-// then run the full timed set of 'learning' sentences.
+// Full Practice: the whole triaged set — 'learning' and 'known' alike, so it
+// stays runnable any time you feel like it, even after everything has
+// graduated. 'new' and 'marked' are excluded: those need First Pass / Review
+// Marked first (and the mode is only unlocked once both are empty anyway).
 export function getFullPracticeQueue(
   sentences: PatternSentence[],
   patternId: string,
 ): PatternSentence[] {
   return sentences.filter(
-    (s) => s.patternId === patternId && s.status === "learning",
+    (s) =>
+      s.patternId === patternId &&
+      (s.status === "learning" || s.status === "known"),
   );
 }

@@ -37,12 +37,18 @@ function deduplicateSentences(
 
 type EditPatternProps = {
   pattern: Pattern;
+  lessonId?: string;
+  courseId?: string;
 };
 
-export function EditPattern({ pattern }: EditPatternProps) {
+export function EditPattern({ pattern, lessonId, courseId }: EditPatternProps) {
   const router = useRouter();
   const t = useTranslations("Patterns");
   const tCommon = useTranslations("Common");
+  const backHref =
+    lessonId && courseId
+      ? `/patterns/${pattern.id}?lessonId=${lessonId}&courseId=${courseId}`
+      : `/patterns/${pattern.id}`;
 
   // Info section
   const [name, setName] = useState(pattern.name);
@@ -116,7 +122,7 @@ export function EditPattern({ pattern }: EditPatternProps) {
           variant="text"
           size="small"
           sx={{ px: 0, minHeight: "auto", alignSelf: "flex-start" }}
-          onClick={() => router.push(`/patterns/${pattern.id}`)}
+          onClick={() => router.push(backHref)}
         >
           {t("backToPattern")}
         </Button>

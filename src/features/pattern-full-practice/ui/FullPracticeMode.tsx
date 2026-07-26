@@ -5,18 +5,27 @@ import { useTranslations } from "next-intl";
 import type { PatternSentence } from "@/entities/pattern";
 import {
   addFullRunAction,
-  markSentenceCorrectAction,
-  markSentenceMistakeAction,
+  commitPracticeSessionAction,
 } from "@/entities/pattern/api/pattern-actions";
 import { getFullPracticeQueue } from "@/shared/model/patterns-store";
-import { SentencePracticeFlow } from "@/shared/ui/SentencePracticeFlow";
+import {
+  SentencePracticeFlow,
+  type SentenceResult,
+} from "@/shared/ui/SentencePracticeFlow";
 
 type FullPracticeModeProps = {
   patternId: string;
   initialSentences: PatternSentence[];
+  lessonId?: string;
+  courseId?: string;
 };
 
-export function FullPracticeMode({ patternId, initialSentences }: FullPracticeModeProps) {
+export function FullPracticeMode({
+  patternId,
+  initialSentences,
+  lessonId,
+  courseId,
+}: FullPracticeModeProps) {
   const t = useTranslations("PatternModes");
   const startTimeRef = useRef(Date.now());
 
@@ -24,21 +33,25 @@ export function FullPracticeMode({ patternId, initialSentences }: FullPracticeMo
     () => getFullPracticeQueue(initialSentences, patternId),
     [initialSentences, patternId],
   );
+  const backHref =
+    lessonId && courseId
+      ? `/patterns/${patternId}?lessonId=${lessonId}&courseId=${courseId}`
+      : `/patterns/${patternId}`;
 
-  function handleSessionComplete() {
+  async function handleComplete(results: SentenceResult[]) {
+    await commitPracticeSessionAction("full-practice", results);
     const durationSec = Math.round((Date.now() - startTimeRef.current) / 1000);
-    addFullRunAction(patternId, durationSec);
+    await addFullRunAction(patternId, durationSec);
   }
 
   return (
     <SentencePracticeFlow
       sentences={sentences}
-      backHref={`/patterns/${patternId}`}
-      onCorrect={(id) => markSentenceCorrectAction(id, "full-practice")}
-      onMistake={(id) => markSentenceMistakeAction(id)}
-      onSessionComplete={handleSessionComplete}
+      backHref={backHref}
+      onComplete={handleComplete}
       emptyLabel={t("noLearningSentences")}
       completeLabel={t("fullRunRecorded")}
+      revealAnswer={false}
     />
   );
 }

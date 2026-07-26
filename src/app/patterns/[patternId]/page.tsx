@@ -1,5 +1,4 @@
 import {
-  getDueReviewSentenceCountByPatternId,
   getPatternById,
   getRunsByPatternId,
   getSentencesByPatternId,
@@ -16,11 +15,10 @@ export default async function PatternDetailPage({ params, searchParams }: Patter
   const { patternId } = await params;
   const { lessonId, courseId } = await searchParams;
   const lessonHref = lessonId && courseId ? `/courses/${courseId}/lessons/${lessonId}` : undefined;
-  const [pattern, sentences, runs, reviewCount] = await Promise.all([
+  const [pattern, sentences, runs] = await Promise.all([
     getPatternById(patternId),
     getSentencesByPatternId(patternId),
     getRunsByPatternId(patternId),
-    getDueReviewSentenceCountByPatternId(patternId),
   ]);
   if (!pattern) notFound();
   return (
@@ -28,8 +26,9 @@ export default async function PatternDetailPage({ params, searchParams }: Patter
       pattern={pattern}
       sentences={sentences}
       runs={runs}
-      reviewCount={reviewCount}
       lessonHref={lessonHref}
+      lessonId={lessonId}
+      courseId={courseId}
     />
   );
 }

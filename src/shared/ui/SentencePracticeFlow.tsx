@@ -19,7 +19,7 @@ import { STUDY_ACTION_BAR_OFFSET, StudyActionBar } from "@/shared/ui/StudyAction
 // Constants
 // ---------------------------------------------------------------------------
 
-const TIMER_SEC = 3;
+const TIMER_SEC = 5;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -31,19 +31,27 @@ const TIMER_SEC = 3;
 //   answer-auto  — timer fired; answer revealed automatically, sentence auto-marked
 type Phase = "prompt" | "answer-manual" | "answer-auto";
 
+export type SentenceResult = { sentenceId: string; correct: boolean };
+
 export type SentencePracticeFlowProps = {
   sentences: PatternSentence[];
   backHref: string;
-  // Called when user manually confirms correct (not on auto-timeout)
-  onCorrect: (sentenceId: string) => void;
-  // Called both on auto-timeout AND when user manually marks a mistake
-  onMistake: (sentenceId: string) => void;
-  // Called once when the entire queue has been processed
-  onSessionComplete?: () => void;
+  // Called once, with every answer from the session, only after the whole
+  // queue has been gone through. Quitting early (Back button, closing the
+  // tab) never calls this — nothing is recorded for a partial pass.
+  onComplete: (results: SentenceResult[]) => void | Promise<void>;
   // Shown when the queue was empty from the start
   emptyLabel: string;
   // Shown after processing the last sentence
   completeLabel: string;
+  // When false, no countdown runs — user reveals the answer whenever ready.
+  // Used by review-marked mode, where rushing defeats the point of reworking mistakes.
+  timed?: boolean;
+  // When false, skip the reveal step entirely: Correct/Mistake are available
+  // immediately and the target text is never shown. Used by full-practice,
+  // where the sentence is already learned and a self-judged mistake routes
+  // back to review-marked mode instead of being checked against the answer here.
+  revealAnswer?: boolean;
 };
 
 // ---------------------------------------------------------------------------
@@ -53,20 +61,17 @@ export type SentencePracticeFlowProps = {
 export function SentencePracticeFlow({
   sentences,
   backHref,
-  onCorrect,
-  onMistake,
-  onSessionComplete,
+  onComplete,
   emptyLabel,
   completeLabel,
+  timed = true,
+  revealAnswer = true,
 }: SentencePracticeFlowProps) {
   const t = useTranslations("PatternModes");
   const tCommon = useTranslations("Common");
-  // Both the queue and the sentences map are snapshotted on mount.
-  // When onMistake fires the store changes the sentence status, which removes
-  // it from the parent's filtered `sentences` prop — if we rebuilt the map
-  // from the prop on every render, current would become null mid-session and
-  // the UI would disappear. The snapshot keeps sentence data stable for the
-  // entire session regardless of store updates.
+  // Both the queue and the sentences map are snapshotted on mount, and stay
+  // fixed for the whole session — nothing is persisted (and the parent's
+  // `sentences` prop never changes) until onComplete fires at the very end.
   const router = useRouter();
 
   const [queue, setQueue] = useState<string[]>(() => sentences.map((s) => s.id));
@@ -80,13 +85,20 @@ export function SentencePracticeFlow({
   const currentId = queue[0] ?? null;
   const current = currentId ? (sentencesMap.get(currentId) ?? null) : null;
 
-  // Keep callback refs current so timer closures never see stale props
-  const onMistakeRef = useRef(onMistake);
-  onMistakeRef.current = onMistake;
-  const onCorrectRef = useRef(onCorrect);
-  onCorrectRef.current = onCorrect;
-  const onSessionCompleteRef = useRef(onSessionComplete);
-  onSessionCompleteRef.current = onSessionComplete;
+  // Collected locally for the whole session — flushed to onComplete only
+  // once the queue is fully drained. Not React state: recording an answer
+  // must never trigger a render on its own, only moveToNext()'s state
+  // updates should.
+  const resultsRef = useRef<SentenceResult[]>([]);
+
+  function record(correct: boolean) {
+    if (!currentId) return;
+    resultsRef.current.push({ sentenceId: currentId, correct });
+  }
+
+  // Keep callback ref current so timer closures never see a stale prop
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   // Timer handle refs — stored in refs so cancelTimer() works from any handler
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -103,7 +115,7 @@ export function SentencePracticeFlow({
     }
   }
 
-  // Start a fresh 3-second countdown whenever the current sentence changes.
+  // Start a fresh countdown whenever the current sentence changes (if timed).
   // The effect cleanup cancels any previous timer, so there is no overlap.
   useEffect(() => {
     if (!currentId) return;
@@ -111,23 +123,30 @@ export function SentencePracticeFlow({
     setPhase("prompt");
     setSecondsLeft(TIMER_SEC);
 
+    if (!timed) return;
+
     tickRef.current = setInterval(() => {
       setSecondsLeft((s) => Math.max(0, s - 1));
     }, 1000);
 
     timerRef.current = setTimeout(() => {
-      // Auto-timeout: mark as mistake, reveal answer, show "Next" button
-      onMistakeRef.current(currentId);
-      setPhase("answer-auto");
+      record(false);
+      if (revealAnswer) {
+        // Reveal the answer and wait for the user to click "Next"
+        setPhase("answer-auto");
+      } else {
+        // No answer to reveal — move straight on
+        moveToNext();
+      }
     }, TIMER_SEC * 1000);
 
     return cancelTimer;
-  }, [currentId]);
+  }, [currentId, timed, revealAnswer]);
 
   // Notify parent when the whole queue finishes (skip if queue was always empty)
   useEffect(() => {
     if (doneCount > 0 && queue.length === 0) {
-      onSessionCompleteRef.current?.();
+      onCompleteRef.current(resultsRef.current);
     }
   }, [doneCount, queue.length]);
 
@@ -149,14 +168,14 @@ export function SentencePracticeFlow({
   function handleCorrect() {
     if (!currentId) return;
     cancelTimer(); // safety: already cancelled if answer-manual, but guard anyway
-    onCorrectRef.current(currentId);
+    record(true);
     moveToNext();
   }
 
   function handleMistake() {
     if (!currentId) return;
     cancelTimer();
-    onMistakeRef.current(currentId);
+    record(false);
     moveToNext();
   }
 
@@ -215,7 +234,8 @@ export function SentencePracticeFlow({
   if (!current) return null;
 
   const total = queue.length + doneCount;
-  const isAnswerVisible = phase === "answer-manual" || phase === "answer-auto";
+  const isAnswerVisible =
+    revealAnswer && (phase === "answer-manual" || phase === "answer-auto");
 
   // ---------------------------------------------------------------------------
   // Render: active session
@@ -235,7 +255,7 @@ export function SentencePracticeFlow({
             {tCommon("back")}
           </Button>
           <Stack alignItems="flex-end" spacing={0.25}>
-            {phase === "prompt" && (
+            {timed && phase === "prompt" && (
               <Chip
                 label={`${secondsLeft}s`}
                 size="small"
@@ -296,13 +316,7 @@ export function SentencePracticeFlow({
 
       {/* Action buttons */}
       <StudyActionBar>
-        {phase === "prompt" && (
-          <Button variant="contained" fullWidth onClick={handleShowAnswer}>
-            {t("showAnswer")}
-          </Button>
-        )}
-
-        {phase === "answer-manual" && (
+        {!revealAnswer && (
           <Stack direction="row" spacing={1}>
             <Button variant="outlined" fullWidth onClick={handleMistake}>
               {t("mistake")}
@@ -313,7 +327,24 @@ export function SentencePracticeFlow({
           </Stack>
         )}
 
-        {phase === "answer-auto" && (
+        {revealAnswer && phase === "prompt" && (
+          <Button variant="contained" fullWidth onClick={handleShowAnswer}>
+            {t("showAnswer")}
+          </Button>
+        )}
+
+        {revealAnswer && phase === "answer-manual" && (
+          <Stack direction="row" spacing={1}>
+            <Button variant="outlined" fullWidth onClick={handleMistake}>
+              {t("mistake")}
+            </Button>
+            <Button variant="contained" fullWidth onClick={handleCorrect}>
+              {t("correct")}
+            </Button>
+          </Stack>
+        )}
+
+        {revealAnswer && phase === "answer-auto" && (
           <Button variant="outlined" fullWidth onClick={moveToNext}>
             {t("next")}
           </Button>

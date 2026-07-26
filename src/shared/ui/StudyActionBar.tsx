@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 // Reserve space at the bottom of scrollable content so it never hides
 // behind the fixed StudyActionBar. Sized for a single row of buttons
 // (with room for label wrap on narrow screens) plus the bar's own padding.
-export const STUDY_ACTION_BAR_OFFSET = "140px";
+export const STUDY_ACTION_BAR_OFFSET = "160px";
 
 type StudyActionBarProps = {
   children: ReactNode;
@@ -29,7 +29,18 @@ export function StudyActionBar({ children }: StudyActionBarProps) {
         pb: "calc(12px + env(safe-area-inset-bottom))",
       }}
     >
-      <Box sx={{ maxWidth: "sm", mx: "auto" }}>{children}</Box>
+      <Box
+        sx={{
+          maxWidth: "sm",
+          mx: "auto",
+          "& .MuiButton-root": {
+            minHeight: 56,
+            fontSize: "16px",
+          },
+        }}
+      >
+        {children}
+      </Box>
     </Box>
   );
 }
