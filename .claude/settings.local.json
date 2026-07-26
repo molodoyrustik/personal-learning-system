@@ -24,7 +24,11 @@
       "Bash(rm -rf /Users/ruslanbagautdinov/development/personal-learning-system/src/app/patterns/\\\\[patternId\\\\]/spaced-review)",
       "Bash(mkdir -p \"/Users/ruslanbagautdinov/development/personal-learning-system/src/app/patterns/[patternId]/mistakes\")",
       "Bash(npx supabase *)",
-      "Bash(echo \"EXIT_CODE=$?\")"
+      "Bash(echo \"EXIT_CODE=$?\")",
+      "Bash(supabase projects *)",
+      "Bash(supabase help *)",
+      "Bash(supabase)",
+      "Bash(supabase backups *)"
     ]
   },
   "enabledMcpjsonServers": [
