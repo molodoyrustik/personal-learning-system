@@ -40,7 +40,7 @@ export async function createPatternWithSentences(params: {
 
   if (params.sentences.length > 0) {
     await supabase.from("pattern_sentences").insert(
-      params.sentences.map(({ sourceText, targetText }) => ({
+      params.sentences.map(({ sourceText, targetText }, i) => ({
         id: generateId(),
         user_id: userId,
         pattern_id: patternId,
@@ -49,8 +49,8 @@ export async function createPatternWithSentences(params: {
         comment: null,
         status: "new",
         last_practiced_at: null,
-        created_at: now,
-        updated_at: now,
+        created_at: nowISO(i),
+        updated_at: nowISO(i),
       })),
     );
   }
@@ -80,9 +80,8 @@ export async function importSentencesAction(
   sentences: { sourceText: string; targetText: string }[],
 ) {
   const { supabase, userId } = await getSupabase();
-  const now = nowISO();
   await supabase.from("pattern_sentences").insert(
-    sentences.map(({ sourceText, targetText }) => ({
+    sentences.map(({ sourceText, targetText }, i) => ({
       id: generateId(),
       user_id: userId,
       pattern_id: patternId,
@@ -91,8 +90,8 @@ export async function importSentencesAction(
       comment: null,
       status: "new",
       last_practiced_at: null,
-      created_at: now,
-      updated_at: now,
+      created_at: nowISO(i),
+      updated_at: nowISO(i),
     })),
   );
   revalidatePath(`/patterns/${patternId}`);

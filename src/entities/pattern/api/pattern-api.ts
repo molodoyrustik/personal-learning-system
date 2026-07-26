@@ -64,7 +64,8 @@ export async function getSentencesByPatternId(
     .from("pattern_sentences")
     .select("*")
     .eq("pattern_id", patternId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
   if (error) throw error;
   return data.map(mapSentence);
 }

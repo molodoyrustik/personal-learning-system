@@ -37,7 +37,8 @@ export async function getWordsByListId(listId: string): Promise<Word[]> {
     .from("words")
     .select("*")
     .eq("list_id", listId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
   if (error) throw error;
   return data.map(mapRow);
 }

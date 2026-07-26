@@ -53,7 +53,7 @@ export async function createListWithWords(params: {
 
   if (params.words.length > 0) {
     await supabase.from("words").insert(
-      params.words.map(({ sourceText, targetText }) => ({
+      params.words.map(({ sourceText, targetText }, i) => ({
         id: generateId(),
         user_id: user.id,
         list_id: listId,
@@ -70,8 +70,8 @@ export async function createListWithWords(params: {
         recall_success_count: 0,
         last_recalled_at: null,
         next_review_at: null,
-        created_at: now,
-        updated_at: now,
+        created_at: nowISO(i),
+        updated_at: nowISO(i),
       })),
     );
   }
@@ -89,9 +89,8 @@ export async function addWordsToListAction(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const now = nowISO();
   await supabase.from("words").insert(
-    words.map(({ sourceText, targetText }) => ({
+    words.map(({ sourceText, targetText }, i) => ({
       id: generateId(),
       user_id: user.id,
       list_id: listId,
@@ -108,8 +107,8 @@ export async function addWordsToListAction(
       recall_success_count: 0,
       last_recalled_at: null,
       next_review_at: null,
-      created_at: now,
-      updated_at: now,
+      created_at: nowISO(i),
+      updated_at: nowISO(i),
     })),
   );
   revalidatePath(`/lists/${listId}`);
