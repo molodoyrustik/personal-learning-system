@@ -28,7 +28,8 @@
       "Bash(supabase projects *)",
       "Bash(supabase help *)",
       "Bash(supabase)",
-      "Bash(supabase backups *)"
+      "Bash(supabase backups *)",
+      "Bash(npx next *)"
     ]
   },
   "enabledMcpjsonServers": [

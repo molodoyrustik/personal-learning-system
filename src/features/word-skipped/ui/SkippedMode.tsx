@@ -2,26 +2,25 @@
 
 import { Button, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useEffect, useRef, useState } from "react";
 import type { List } from "@/entities/list";
-import type { Word } from "@/entities/word/model/types";
 import {
-  saveEncodingAction,
-  setMeaningVisualizationAction,
-  skipWordAction,
+  commitEncodingResultsAction,
+  type EncodingResult,
 } from "@/entities/word/api/word-actions";
-import {
-  getEncodingTimeLimit,
-  getTimedPassNumber,
-  isInSkippedQueue,
-} from "@/shared/model/app-store";
+import type { Word } from "@/entities/word/model/types";
 import {
   StepFixation,
   StepImageCheck,
   StepSceneCreation,
   StepSoundEncoding,
 } from "@/features/word-encoding/ui/encoding-steps";
+import {
+  getEncodingTimeLimit,
+  getTimedPassNumber,
+  isInSkippedQueue,
+} from "@/shared/model/app-store";
 import { STUDY_ACTION_BAR_OFFSET } from "@/shared/ui/StudyActionBar";
 
 type SkippedModeProps = {
@@ -92,8 +91,11 @@ export function SkippedMode({ list, initialWords }: SkippedModeProps) {
   const current = queue[0] ?? null;
   const total = queue.length;
 
-  const skipRef = useRef(skipWordAction);
-  skipRef.current = skipWordAction;
+  // Collected locally for the whole session — flushed to
+  // commitEncodingResultsAction only once the queue is fully drained.
+  // Quitting early (Back button, closing the tab) never persists anything.
+  const resultsRef = useRef<EncodingResult[]>([]);
+  const canVisualizeRef = useRef<boolean | undefined>(undefined);
 
   function trackEncoded() { setOutcomes((o) => ({ ...o, encoded: o.encoded + 1 })); }
   function trackSkip(word: Word) {
@@ -107,10 +109,21 @@ export function SkippedMode({ list, initialWords }: SkippedModeProps) {
   const trackSkipRef = useRef(trackSkip);
   trackSkipRef.current = trackSkip;
 
+  function pushSkipped(wordId: string) {
+    resultsRef.current.push({
+      wordId,
+      outcome: "skipped",
+      canVisualizeMeaning: canVisualizeRef.current,
+    });
+  }
+  const pushSkippedRef = useRef(pushSkipped);
+  pushSkippedRef.current = pushSkipped;
+
   function resetInputs() {
     setSoundAssociation("");
     setSceneDescription("");
     setStep(1);
+    canVisualizeRef.current = undefined;
   }
 
   function moveToNext() {
@@ -125,6 +138,13 @@ export function SkippedMode({ list, initialWords }: SkippedModeProps) {
   const currentRef = useRef(current);
   currentRef.current = current;
 
+  // Notify once the whole queue finishes (skip if queue was always empty)
+  useEffect(() => {
+    if (doneCount > 0 && queue.length === 0) {
+      commitEncodingResultsAction(resultsRef.current);
+    }
+  }, [doneCount, queue.length]);
+
   useEffect(() => {
     if (!current) return;
     const sec = getEncodingTimeLimit(current) ?? 15;
@@ -135,7 +155,7 @@ export function SkippedMode({ list, initialWords }: SkippedModeProps) {
     const t = setTimeout(() => {
       const w = currentRef.current;
       if (w) {
-        skipRef.current(w.id);
+        pushSkippedRef.current(w.id);
         trackSkipRef.current(w);
       }
       moveToNextRef.current();
@@ -146,15 +166,15 @@ export function SkippedMode({ list, initialWords }: SkippedModeProps) {
     };
   }, [current?.id]);
 
-  async function handleHasImage() {
+  function handleHasImage() {
     if (!current) return;
-    await setMeaningVisualizationAction(current.id, true);
+    canVisualizeRef.current = true;
     setStep(2);
   }
 
-  async function handleImageSkip() {
+  function handleImageSkip() {
     if (!current) return;
-    await skipWordAction(current.id);
+    pushSkipped(current.id);
     trackSkip(current);
     moveToNext();
   }
@@ -163,9 +183,9 @@ export function SkippedMode({ list, initialWords }: SkippedModeProps) {
     setStep(3);
   }
 
-  async function handleSoundSkip() {
+  function handleSoundSkip() {
     if (!current) return;
-    await skipWordAction(current.id);
+    pushSkipped(current.id);
     trackSkip(current);
     moveToNext();
   }
@@ -174,18 +194,21 @@ export function SkippedMode({ list, initialWords }: SkippedModeProps) {
     setStep(4);
   }
 
-  async function handleSceneSkip() {
+  function handleSceneSkip() {
     if (!current) return;
-    await skipWordAction(current.id);
+    pushSkipped(current.id);
     trackSkip(current);
     moveToNext();
   }
 
-  async function handleDone() {
+  function handleDone() {
     if (!current) return;
-    await saveEncodingAction(current.id, {
+    resultsRef.current.push({
+      wordId: current.id,
+      outcome: "encoded",
       soundAssociation: soundAssociation.trim(),
       sceneDescription: sceneDescription.trim(),
+      canVisualizeMeaning: canVisualizeRef.current,
     });
     trackEncoded();
     moveToNext();

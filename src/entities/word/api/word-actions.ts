@@ -41,96 +41,94 @@ function cardToUpdate(card: Card, now: Date) {
   };
 }
 
-export async function selectWordAction(wordId: string) {
-  const supabase = await getSupabase();
-  await supabase
-    .from("words")
-    .update({
-      status: "selected",
-      selection_decision: "unknown_and_needed",
-      updated_at: nowISO(),
-    })
-    .eq("id", wordId);
-}
-
-export async function rejectWordAction(
-  wordId: string,
-  reason: Exclude<SelectionDecision, "unknown_and_needed" | null>,
+// Applies Selection decisions for a whole session in one go, same
+// all-or-nothing rule as commitRecallResultsAction below — quitting partway
+// through Selection mode discards the session entirely.
+export async function commitSelectionResultsAction(
+  results: {
+    wordId: string;
+    decision: Exclude<SelectionDecision, null>;
+  }[],
 ) {
   const supabase = await getSupabase();
-  await supabase
-    .from("words")
-    .update({
-      status: "rejected",
-      selection_decision: reason,
-      updated_at: nowISO(),
-    })
-    .eq("id", wordId);
+  const now = nowISO();
+
+  await Promise.all(
+    results.map(({ wordId, decision }) =>
+      supabase
+        .from("words")
+        .update({
+          status: decision === "unknown_and_needed" ? "selected" : "rejected",
+          selection_decision: decision,
+          updated_at: now,
+        })
+        .eq("id", wordId),
+    ),
+  );
 }
 
-export async function setMeaningVisualizationAction(
-  wordId: string,
-  canVisualizeMeaning: boolean,
-) {
+export type EncodingResult = {
+  wordId: string;
+  canVisualizeMeaning?: boolean;
+} & (
+  | { outcome: "skipped" }
+  | { outcome: "encoded"; soundAssociation: string; sceneDescription: string }
+);
+
+// Applies Encoding/Slow Encode/Skipped-mode outcomes for a whole session in
+// one go, same all-or-nothing rule as commitRecallResultsAction below —
+// quitting partway through a pass discards the session entirely.
+export async function commitEncodingResultsAction(results: EncodingResult[]) {
   const supabase = await getSupabase();
-  await supabase
-    .from("words")
-    .update({
-      can_visualize_meaning: canVisualizeMeaning,
-      updated_at: nowISO(),
-    })
-    .eq("id", wordId);
-}
+  const now = nowISO();
 
-export async function saveEncodingAction(
-  wordId: string,
-  params: { soundAssociation: string; sceneDescription: string },
-) {
-  const supabase = await getSupabase();
-  const { data: word } = await supabase
+  const { data: rows } = await supabase
     .from("words")
-    .select("encoding_attempt_round, encoding_attempt_count")
-    .eq("id", wordId)
-    .single();
-  if (!word) return;
+    .select("id, encoding_attempt_round, encoding_attempt_count, skip_count")
+    .in(
+      "id",
+      results.map((r) => r.wordId),
+    );
+  const byId = new Map((rows ?? []).map((r) => [r.id as string, r]));
 
-  const r = word.encoding_attempt_round as EncodingAttemptRound;
-  const encodingAttemptRound = r == null ? 1 : r === 1 ? 2 : r === 2 ? 3 : 3;
+  await Promise.all(
+    results.map((result) => {
+      const row = byId.get(result.wordId);
+      const round = (row?.encoding_attempt_round ?? null) as EncodingAttemptRound;
+      const attemptCount = row?.encoding_attempt_count ?? 0;
 
-  await supabase
-    .from("words")
-    .update({
-      sound_association: params.soundAssociation,
-      scene_description: params.sceneDescription,
-      status: "encoded",
-      encoding_attempt_count: word.encoding_attempt_count + 1,
-      encoding_attempt_round: encodingAttemptRound,
-      updated_at: nowISO(),
-    })
-    .eq("id", wordId);
-}
+      if (result.outcome === "skipped") {
+        return supabase
+          .from("words")
+          .update({
+            status: "skipped",
+            skip_count: (row?.skip_count ?? 0) + 1,
+            encoding_attempt_count: attemptCount + 1,
+            encoding_attempt_round: nextEncodingRound(round),
+            ...(result.canVisualizeMeaning !== undefined && {
+              can_visualize_meaning: result.canVisualizeMeaning,
+            }),
+            updated_at: now,
+          })
+          .eq("id", result.wordId);
+      }
 
-export async function skipWordAction(wordId: string) {
-  const supabase = await getSupabase();
-  const { data: word } = await supabase
-    .from("words")
-    .select("encoding_attempt_round, encoding_attempt_count, skip_count")
-    .eq("id", wordId)
-    .single();
-  if (!word) return;
-
-  await supabase
-    .from("words")
-    .update({
-      status: "skipped",
-      skip_count: word.skip_count + 1,
-      encoding_attempt_count: word.encoding_attempt_count + 1,
-      encoding_attempt_round: nextEncodingRound(
-        word.encoding_attempt_round as EncodingAttemptRound,
-      ),
-      updated_at: nowISO(),
-    })
-    .eq("id", wordId);
+      return supabase
+        .from("words")
+        .update({
+          sound_association: result.soundAssociation,
+          scene_description: result.sceneDescription,
+          status: "encoded",
+          encoding_attempt_count: attemptCount + 1,
+          encoding_attempt_round: nextEncodingRound(round),
+          ...(result.canVisualizeMeaning !== undefined && {
+            can_visualize_meaning: result.canVisualizeMeaning,
+          }),
+          updated_at: now,
+        })
+        .eq("id", result.wordId);
+    }),
+  );
 }
 
 // Applies Recall results for a whole session in one go. Called only once the

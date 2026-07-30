@@ -2,22 +2,21 @@
 
 import { Button, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useEffect, useRef, useState } from "react";
 import type { List } from "@/entities/list";
-import type { Word } from "@/entities/word/model/types";
 import {
-  saveEncodingAction,
-  setMeaningVisualizationAction,
-  skipWordAction,
+  commitEncodingResultsAction,
+  type EncodingResult,
 } from "@/entities/word/api/word-actions";
-import { isInSlowEncodeQueue } from "@/shared/model/app-store";
+import type { Word } from "@/entities/word/model/types";
 import {
   StepFixation,
   StepImageCheck,
   StepSceneCreation,
   StepSoundEncoding,
 } from "@/features/word-encoding/ui/encoding-steps";
+import { isInSlowEncodeQueue } from "@/shared/model/app-store";
 import { STUDY_ACTION_BAR_OFFSET } from "@/shared/ui/StudyActionBar";
 
 type SlowEncodeModeProps = {
@@ -64,10 +63,17 @@ export function SlowEncodeMode({ list, initialWords }: SlowEncodeModeProps) {
   const current = queue[0] ?? null;
   const total = queue.length;
 
+  // Collected locally for the whole session — flushed to
+  // commitEncodingResultsAction only once the queue is fully drained.
+  // Quitting early (Back button, closing the tab) never persists anything.
+  const resultsRef = useRef<EncodingResult[]>([]);
+  const canVisualizeRef = useRef<boolean | undefined>(undefined);
+
   function resetInputs() {
     setSoundAssociation("");
     setSceneDescription("");
     setStep(1);
+    canVisualizeRef.current = undefined;
   }
 
   function moveToNext() {
@@ -76,15 +82,26 @@ export function SlowEncodeMode({ list, initialWords }: SlowEncodeModeProps) {
     resetInputs();
   }
 
-  async function handleHasImage() {
+  // Notify once the whole queue finishes (skip if queue was always empty)
+  useEffect(() => {
+    if (doneCount > 0 && queue.length === 0) {
+      commitEncodingResultsAction(resultsRef.current);
+    }
+  }, [doneCount, queue.length]);
+
+  function handleHasImage() {
     if (!current) return;
-    await setMeaningVisualizationAction(current.id, true);
+    canVisualizeRef.current = true;
     setStep(2);
   }
 
-  async function handleImageSkip() {
+  function handleImageSkip() {
     if (!current) return;
-    await skipWordAction(current.id);
+    resultsRef.current.push({
+      wordId: current.id,
+      outcome: "skipped",
+      canVisualizeMeaning: canVisualizeRef.current,
+    });
     moveToNext();
   }
 
@@ -92,9 +109,13 @@ export function SlowEncodeMode({ list, initialWords }: SlowEncodeModeProps) {
     setStep(3);
   }
 
-  async function handleSoundSkip() {
+  function handleSoundSkip() {
     if (!current) return;
-    await skipWordAction(current.id);
+    resultsRef.current.push({
+      wordId: current.id,
+      outcome: "skipped",
+      canVisualizeMeaning: canVisualizeRef.current,
+    });
     moveToNext();
   }
 
@@ -102,17 +123,24 @@ export function SlowEncodeMode({ list, initialWords }: SlowEncodeModeProps) {
     setStep(4);
   }
 
-  async function handleSceneSkip() {
+  function handleSceneSkip() {
     if (!current) return;
-    await skipWordAction(current.id);
+    resultsRef.current.push({
+      wordId: current.id,
+      outcome: "skipped",
+      canVisualizeMeaning: canVisualizeRef.current,
+    });
     moveToNext();
   }
 
-  async function handleDone() {
+  function handleDone() {
     if (!current) return;
-    await saveEncodingAction(current.id, {
+    resultsRef.current.push({
+      wordId: current.id,
+      outcome: "encoded",
       soundAssociation: soundAssociation.trim(),
       sceneDescription: sceneDescription.trim(),
+      canVisualizeMeaning: canVisualizeRef.current,
     });
     setEncodedCount((n) => n + 1);
     moveToNext();

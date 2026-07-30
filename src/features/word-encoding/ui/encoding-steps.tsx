@@ -106,7 +106,6 @@ export function StepSoundEncoding({
               onChange={(e) => onChange(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && onNext()}
               fullWidth
-              autoFocus
             />
           </Stack>
         </CardContent>
@@ -156,7 +155,6 @@ export function StepSceneCreation({
               onChange={(e) => onChange(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && onSave()}
               fullWidth
-              autoFocus
             />
           </Stack>
         </CardContent>

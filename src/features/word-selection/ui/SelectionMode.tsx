@@ -2,11 +2,11 @@
 
 import { Button, Card, CardContent, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useEffect, useRef, useState } from "react";
 import type { List } from "@/entities/list";
+import { commitSelectionResultsAction } from "@/entities/word/api/word-actions";
 import type { Word } from "@/entities/word/model/types";
-import { selectWordAction, rejectWordAction } from "@/entities/word/api/word-actions";
 import { STUDY_ACTION_BAR_OFFSET, StudyActionBar } from "@/shared/ui/StudyActionBar";
 
 type SelectionModeProps = {
@@ -24,20 +24,32 @@ export function SelectionMode({ list, initialWords }: SelectionModeProps) {
   );
   const [processed, setProcessed] = useState(0);
 
+  // Collected locally for the whole session — flushed to
+  // commitSelectionResultsAction only once the queue is fully drained.
+  // Quitting early (Back button, closing the tab) never persists anything.
+  const resultsRef = useRef<{ wordId: string; decision: "unknown_and_needed" | "already_known" }[]>([]);
+
   const total = queue.length;
   const current = queue[0] ?? null;
   const isFinished = queue.length === 0;
 
-  async function handleNeedToLearn() {
+  // Notify once the whole queue finishes (skip if queue was always empty)
+  useEffect(() => {
+    if (processed > 0 && queue.length === 0) {
+      commitSelectionResultsAction(resultsRef.current);
+    }
+  }, [processed, queue.length]);
+
+  function handleNeedToLearn() {
     if (!current) return;
-    await selectWordAction(current.id);
+    resultsRef.current.push({ wordId: current.id, decision: "unknown_and_needed" });
     setProcessed((n) => n + 1);
     setQueue((q) => q.slice(1));
   }
 
-  async function handleAlreadyKnow() {
+  function handleAlreadyKnow() {
     if (!current) return;
-    await rejectWordAction(current.id, "already_known");
+    resultsRef.current.push({ wordId: current.id, decision: "already_known" });
     setProcessed((n) => n + 1);
     setQueue((q) => q.slice(1));
   }
