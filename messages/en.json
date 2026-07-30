@@ -40,7 +40,11 @@
     "newCourseHeading": "New course",
     "editCourseHeading": "Edit course",
     "titleLabel": "Title",
-    "descriptionLabel": "Description (optional)"
+    "descriptionLabel": "Description (optional)",
+    "statusTodo": "To do",
+    "statusInProgress": "In progress",
+    "statusDone": "Done",
+    "dueForReview": "Review: {count}"
   },
   "Lessons": {
     "backToCourse": "← Course",

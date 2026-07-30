@@ -40,7 +40,11 @@
     "newCourseHeading": "Новый курс",
     "editCourseHeading": "Редактировать курс",
     "titleLabel": "Название",
-    "descriptionLabel": "Описание (необязательно)"
+    "descriptionLabel": "Описание (необязательно)",
+    "statusTodo": "Не начато",
+    "statusInProgress": "В процессе",
+    "statusDone": "Завершено",
+    "dueForReview": "Повторить: {count}"
   },
   "Lessons": {
     "backToCourse": "← Курс",

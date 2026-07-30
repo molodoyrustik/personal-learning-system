@@ -19,7 +19,9 @@ function mapLesson(row: Record<string, unknown>): Lesson {
   };
 }
 
-export async function getLessonsByCourseId(courseId: string): Promise<Lesson[]> {
+export async function getLessonsByCourseId(
+  courseId: string,
+): Promise<Lesson[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("lessons")

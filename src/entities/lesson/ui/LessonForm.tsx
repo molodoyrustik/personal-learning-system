@@ -1,10 +1,16 @@
 "use client";
 
-import { Button, IconButton, Stack, TextField, Typography } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import {
+  Button,
+  IconButton,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 
 type LessonFormProps = {
   backHref: string;
@@ -12,7 +18,10 @@ type LessonFormProps = {
   submitLabel: string;
   initialTitle?: string;
   initialDescription?: string;
-  onSubmit: (data: { title: string; description: string | null }) => Promise<void>;
+  onSubmit: (data: {
+    title: string;
+    description: string | null;
+  }) => Promise<void>;
 };
 
 export function LessonForm({

@@ -99,3 +99,35 @@ export async function getSentenceCountsByPatternIds(
   }
   return counts;
 }
+
+export type SentenceProgress = {
+  total: number;
+  newCount: number;
+  doneCount: number;
+};
+
+export async function getSentenceProgressByPatternIds(
+  patternIds: string[],
+): Promise<Record<string, SentenceProgress>> {
+  if (patternIds.length === 0) return {};
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("pattern_sentences")
+    .select("pattern_id, status")
+    .in("pattern_id", patternIds);
+  if (error) throw error;
+
+  const progress: Record<string, SentenceProgress> = {};
+  for (const row of data) {
+    const patternId = row.pattern_id as string;
+    const status = row.status as PatternSentence["status"];
+    if (!progress[patternId]) {
+      progress[patternId] = { total: 0, newCount: 0, doneCount: 0 };
+    }
+    const p = progress[patternId];
+    p.total += 1;
+    if (status === "new") p.newCount += 1;
+    if (status === "known") p.doneCount += 1;
+  }
+  return progress;
+}

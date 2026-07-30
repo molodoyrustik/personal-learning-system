@@ -1,5 +1,22 @@
+import { nowISO } from "@/shared/lib/date";
 import { createClient } from "@/shared/lib/supabase/server";
 import type { Word } from "../model/types";
+
+export type WordProgress = {
+  total: number;
+  newCount: number;
+  doneCount: number;
+  dueCount: number;
+};
+
+// A word no longer needs active work once it's rejected (opted out) or has
+// graduated into spaced review — "done" for lesson-status purposes.
+const DONE_WORD_STATUSES: Word["status"][] = [
+  "rejected",
+  "memorized",
+  "reviewing",
+  "known",
+];
 
 function mapRow(row: Record<string, unknown>): Word {
   return {
@@ -41,4 +58,39 @@ export async function getWordsByListId(listId: string): Promise<Word[]> {
     .order("id", { ascending: true });
   if (error) throw error;
   return data.map(mapRow);
+}
+
+export async function getWordProgressByListIds(
+  listIds: string[],
+): Promise<Record<string, WordProgress>> {
+  if (listIds.length === 0) return {};
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("words")
+    .select("list_id, status, next_review_at")
+    .in("list_id", listIds);
+  if (error) throw error;
+
+  const now = nowISO();
+  const progress: Record<string, WordProgress> = {};
+  for (const row of data) {
+    const listId = row.list_id as string;
+    const status = row.status as Word["status"];
+    if (!progress[listId]) {
+      progress[listId] = { total: 0, newCount: 0, doneCount: 0, dueCount: 0 };
+    }
+    const p = progress[listId];
+    p.total += 1;
+    if (status === "new") p.newCount += 1;
+    if (DONE_WORD_STATUSES.includes(status)) p.doneCount += 1;
+    const nextReviewAt = row.next_review_at as string | null;
+    if (
+      (status === "memorized" || status === "reviewing") &&
+      nextReviewAt &&
+      nextReviewAt <= now
+    ) {
+      p.dueCount += 1;
+    }
+  }
+  return progress;
 }
