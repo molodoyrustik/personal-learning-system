@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/shared/lib/supabase/server";
+import { createClient, getUserId } from "@/shared/lib/supabase/server";
 import { nowISO } from "@/shared/lib/date";
 import { generateId } from "@/shared/lib/ids";
 
@@ -11,15 +11,13 @@ export async function createCharacteristicAction(input: {
   example?: string | null;
 }): Promise<void> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const userId = await getUserId(supabase);
+  if (!userId) throw new Error("Not authenticated");
 
   const now = nowISO();
   await supabase.from("characteristics").insert({
     id: generateId(),
-    user_id: user.id,
+    user_id: userId,
     key: input.key,
     description: input.description,
     example: input.example ?? null,
@@ -33,15 +31,13 @@ export async function createCharacteristicAction(input: {
 export async function createCharacteristicsAction(keys: string[]): Promise<void> {
   if (keys.length === 0) return;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const userId = await getUserId(supabase);
+  if (!userId) throw new Error("Not authenticated");
 
   const now = nowISO();
   const rows = keys.map((key) => ({
     id: generateId(),
-    user_id: user.id,
+    user_id: userId,
     key,
     description: "",
     example: null,

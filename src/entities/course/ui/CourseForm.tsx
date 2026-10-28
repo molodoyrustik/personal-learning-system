@@ -2,9 +2,9 @@
 
 import { Button, IconButton, Stack, TextField, Typography } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 
 type CourseFormProps = {
   backHref: string;
@@ -23,7 +23,6 @@ export function CourseForm({
   initialDescription = "",
   onSubmit,
 }: CourseFormProps) {
-  const router = useRouter();
   const tCourses = useTranslations("Courses");
   const tCommon = useTranslations("Common");
   const [title, setTitle] = useState(initialTitle);
@@ -44,7 +43,8 @@ export function CourseForm({
   return (
     <Stack spacing={3} sx={{ maxWidth: 560 }}>
       <IconButton
-        onClick={() => router.push(backHref)}
+        component={Link}
+        href={backHref}
         size="small"
         sx={{ alignSelf: "flex-start" }}
         aria-label="Back"

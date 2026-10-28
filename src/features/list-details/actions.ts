@@ -2,14 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createClient } from "@/shared/lib/supabase/server";
+import { createClient, getUserId } from "@/shared/lib/supabase/server";
 
 export async function resetListProgressAction(listId: string): Promise<void> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const userId = await getUserId(supabase);
+  if (!userId) throw new Error("Not authenticated");
 
   await supabase
     .from("words")
@@ -34,28 +32,26 @@ export async function resetListProgressAction(listId: string): Promise<void> {
       updated_at: new Date().toISOString(),
     })
     .eq("list_id", listId)
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
 
   revalidatePath(`/lists/${listId}`);
 }
 
 export async function deleteListAction(listId: string): Promise<void> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const userId = await getUserId(supabase);
+  if (!userId) throw new Error("Not authenticated");
 
   await supabase
     .from("words")
     .delete()
     .eq("list_id", listId)
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
   const { error } = await supabase
     .from("lists")
     .delete()
     .eq("id", listId)
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
   if (error) throw error;
 
   revalidatePath("/lists");

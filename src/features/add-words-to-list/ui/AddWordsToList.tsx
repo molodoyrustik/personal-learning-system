@@ -18,6 +18,7 @@ import type { List } from "@/entities/list";
 import { ImportDrawer, type ImportedWord } from "@/features/import-words";
 import { addWordsToListAction } from "@/features/add-new-list/actions";
 import { generateId } from "@/shared/lib/ids";
+import Link from "next/link";
 
 type PreviewWord = { id: string; sourceText: string; targetText: string };
 
@@ -76,7 +77,6 @@ export function AddWordsToList({ list }: AddWordsToListProps) {
         list.id,
         words.map(({ sourceText, targetText }) => ({ sourceText, targetText })),
       );
-      router.refresh();
       router.push(`/lists/${list.id}`);
     } finally {
       setLoading(false);
@@ -91,7 +91,8 @@ export function AddWordsToList({ list }: AddWordsToListProps) {
             variant="text"
             size="small"
             sx={{ px: 0, minHeight: "auto" }}
-            onClick={() => router.push(`/lists/${list.id}`)}
+            component={Link}
+            href={`/lists/${list.id}`}
           >
             ← Back to list
           </Button>

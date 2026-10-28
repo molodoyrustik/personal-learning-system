@@ -5,14 +5,16 @@ import { notFound } from "next/navigation";
 
 type RecallPageProps = {
   params: Promise<{ listId: string }>;
+  searchParams: Promise<{ run?: string }>;
 };
 
-export default async function RecallPage({ params }: RecallPageProps) {
+export default async function RecallPage({ params, searchParams }: RecallPageProps) {
   const { listId } = await params;
+  const run = Number((await searchParams).run ?? 0);
   const [list, words] = await Promise.all([
     getListById(listId),
     getWordsByListId(listId),
   ]);
   if (!list) notFound();
-  return <RecallMode list={list} initialWords={words} />;
+  return <RecallMode key={run} list={list} initialWords={words} run={run} />;
 }

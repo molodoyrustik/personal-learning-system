@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Stack, Typography } from "@mui/material";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import type { List } from "@/entities/list";
@@ -21,6 +21,8 @@ import {
   StepSceneCreation,
   StepSoundEncoding,
 } from "./encoding-steps";
+import { useSessionCommit } from "@/shared/lib/use-session-commit";
+import { SessionSaveGate } from "@/shared/ui/SessionSaveGate";
 
 type EncodingModeProps = {
   list: List;
@@ -31,12 +33,12 @@ type Step = 1 | 2 | 3 | 4;
 
 type Outcomes = { encoded: number; skipped: number };
 
-function CompletionState({ empty, outcomes, onBack, onGoToSkipped, onGoToRecall }: {
+function CompletionState({ empty, outcomes, backHref, skippedHref, recallHref }: {
   empty?: boolean;
   outcomes: Outcomes;
-  onBack: () => void;
-  onGoToSkipped: () => void;
-  onGoToRecall: () => void;
+  backHref: string;
+  skippedHref: string;
+  recallHref: string;
 }) {
   const t = useTranslations("WordModes");
   const hasSkipped = outcomes.skipped > 0;
@@ -55,12 +57,12 @@ function CompletionState({ empty, outcomes, onBack, onGoToSkipped, onGoToRecall 
       </Stack>
       <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 320 }}>
         {!empty && hasSkipped && (
-          <Button variant="contained" fullWidth onClick={onGoToSkipped}>{t("toSkippedMode")}</Button>
+          <Button variant="contained" fullWidth component={Link} href={skippedHref}>{t("toSkippedMode")}</Button>
         )}
         {!empty && !hasSkipped && hasEncoded && (
-          <Button variant="contained" fullWidth onClick={onGoToRecall}>{t("toRecallMode")}</Button>
+          <Button variant="contained" fullWidth component={Link} href={recallHref}>{t("toRecallMode")}</Button>
         )}
-        <Button variant="outlined" fullWidth onClick={onBack}>{t("backToList")}</Button>
+        <Button variant="outlined" fullWidth component={Link} href={backHref}>{t("backToList")}</Button>
       </Stack>
     </Stack>
   );
@@ -109,12 +111,11 @@ export function EncodingMode({ list, initialWords }: EncodingModeProps) {
   const moveToNextRef = useRef(moveToNext);
   moveToNextRef.current = moveToNext;
 
-  // Notify once the whole queue finishes (skip if queue was always empty)
-  useEffect(() => {
-    if (doneCount > 0 && queue.length === 0) {
-      commitEncodingResultsAction(resultsRef.current);
-    }
-  }, [doneCount, queue.length]);
+  // Persist once the whole queue finishes (skip if queue was always empty)
+  const save = useSessionCommit(
+    () => commitEncodingResultsAction(resultsRef.current),
+    doneCount > 0 && queue.length === 0,
+  );
 
   useEffect(() => {
     if (!current) return;
@@ -194,13 +195,12 @@ export function EncodingMode({ list, initialWords }: EncodingModeProps) {
     moveToNext();
   }
 
-  const router = useRouter();
-  function goBack() { router.refresh(); router.push(`/lists/${listId}`); }
-  function goToSkipped() { router.refresh(); router.push(`/lists/${listId}/skipped`); }
-  function goToRecall() { router.refresh(); router.push(`/lists/${listId}/recall`); }
+  const backHref = `/lists/${listId}`;
+  const skippedHref = `/lists/${listId}/skipped`;
+  const recallHref = `/lists/${listId}/recall`;
 
-  if (total === 0 && doneCount === 0) return <CompletionState empty outcomes={outcomes} onBack={goBack} onGoToSkipped={goToSkipped} onGoToRecall={goToRecall} />;
-  if (!current && doneCount > 0) return <CompletionState outcomes={outcomes} onBack={goBack} onGoToSkipped={goToSkipped} onGoToRecall={goToRecall} />;
+  if (total === 0 && doneCount === 0) return <CompletionState empty outcomes={outcomes} backHref={backHref} skippedHref={skippedHref} recallHref={recallHref} />;
+  if (!current && doneCount > 0) return <SessionSaveGate status={save.status} onRetry={save.retry}><CompletionState outcomes={outcomes} backHref={backHref} skippedHref={skippedHref} recallHref={recallHref} /></SessionSaveGate>;
 
   const passUi = getTimedPassNumber(current) ?? 1;
   const limitSec = getEncodingTimeLimit(current) ?? 10;
@@ -208,7 +208,7 @@ export function EncodingMode({ list, initialWords }: EncodingModeProps) {
   return (
     <Stack spacing={3} sx={{ pb: STUDY_ACTION_BAR_OFFSET }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} onClick={goBack}>
+        <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} component={Link} href={backHref}>
           {t("back")}
         </Button>
         <Stack alignItems="flex-end" spacing={0.25}>

@@ -81,7 +81,6 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
     await addWordListToLessonAction(lesson.id, selectedList, courseId);
     setSelectedList("");
     setShowAttachList(false);
-    router.refresh();
   }
 
   function handleRemoveListConfirm() {
@@ -89,7 +88,6 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
     startTransition(async () => {
       await removeWordListFromLessonAction(lesson.id, removeListId, courseId);
       setRemoveListId(null);
-      router.refresh();
     });
   }
 
@@ -98,7 +96,6 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
     await addPatternToLessonAction(lesson.id, selectedPattern, courseId);
     setSelectedPattern("");
     setShowAttachPattern(false);
-    router.refresh();
   }
 
   function handleRemovePatternConfirm() {
@@ -106,7 +103,6 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
     startTransition(async () => {
       await removePatternFromLessonAction(lesson.id, removePatternId, courseId);
       setRemovePatternId(null);
-      router.refresh();
     });
   }
 
@@ -161,7 +157,8 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
 
       <Button
         variant="text"
-        onClick={() => router.push(`/courses/${courseId}`)}
+        component={Link}
+        href={`/courses/${courseId}`}
         size="small"
         sx={{ alignSelf: "flex-start" }}
       >
@@ -227,7 +224,7 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
                 anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                 transformOrigin={{ vertical: "top", horizontal: "right" }}
               >
-                <MenuItem onClick={() => { closeListsMenu(); router.push(`/lists/new?${lessonParams}`); }}>
+                <MenuItem component={Link} href={`/lists/new?${lessonParams}`} onClick={closeListsMenu}>
                   {t("createWordList")}
                 </MenuItem>
                 {availableLists.length > 0 && (
@@ -317,7 +314,7 @@ export function LessonDetails({ courseId, lesson, allLists, allPatterns }: Lesso
                 anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                 transformOrigin={{ vertical: "top", horizontal: "right" }}
               >
-                <MenuItem onClick={() => { closePatternsMenu(); router.push(`/patterns/new?${lessonParams}`); }}>
+                <MenuItem component={Link} href={`/patterns/new?${lessonParams}`} onClick={closePatternsMenu}>
                   {t("createPatternList")}
                 </MenuItem>
                 {availablePatterns.length > 0 && (

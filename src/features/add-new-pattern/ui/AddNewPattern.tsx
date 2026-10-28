@@ -14,6 +14,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import {
   ImportSentencesDrawer,
   type ImportedSentence,
@@ -90,7 +91,6 @@ export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
       });
       if (fromLesson) {
         await addPatternToLessonAction(lessonId!, patternId, courseId!);
-        router.refresh();
         router.push(`/courses/${courseId}/lessons/${lessonId}`);
       } else {
         router.push(`/patterns/${patternId}`);
@@ -108,11 +108,8 @@ export function AddNewPattern({ lessonId, courseId }: AddNewPatternProps = {}) {
             variant="text"
             size="small"
             sx={{ px: 0, minHeight: "auto" }}
-            onClick={() =>
-              fromLesson
-                ? router.push(`/courses/${courseId}/lessons/${lessonId}`)
-                : router.push("/patterns")
-            }
+            component={Link}
+            href={fromLesson ? `/courses/${courseId}/lessons/${lessonId}` : "/patterns"}
           >
             {fromLesson ? t("backToLesson") : t("backToPatterns")}
           </Button>

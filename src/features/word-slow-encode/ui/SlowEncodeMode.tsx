@@ -1,9 +1,9 @@
 "use client";
 
 import { Button, Stack, Typography } from "@mui/material";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { List } from "@/entities/list";
 import {
   commitEncodingResultsAction,
@@ -18,6 +18,8 @@ import {
 } from "@/features/word-encoding/ui/encoding-steps";
 import { isInSlowEncodeQueue } from "@/shared/model/app-store";
 import { STUDY_ACTION_BAR_OFFSET } from "@/shared/ui/StudyActionBar";
+import { useSessionCommit } from "@/shared/lib/use-session-commit";
+import { SessionSaveGate } from "@/shared/ui/SessionSaveGate";
 
 type SlowEncodeModeProps = {
   list: List;
@@ -26,7 +28,7 @@ type SlowEncodeModeProps = {
 
 type Step = 1 | 2 | 3 | 4;
 
-function CompletionState({ empty, onBack, onNext }: { empty?: boolean; onBack: () => void; onNext?: () => void }) {
+function CompletionState({ empty, backHref, nextHref }: { empty?: boolean; backHref: string; nextHref?: string }) {
   const t = useTranslations("WordModes");
   return (
     <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
@@ -41,8 +43,8 @@ function CompletionState({ empty, onBack, onNext }: { empty?: boolean; onBack: (
         </Typography>
       </Stack>
       <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 320 }}>
-        {!empty && onNext && <Button variant="contained" fullWidth onClick={onNext}>{t("toRecallMode")}</Button>}
-        <Button variant="outlined" fullWidth onClick={onBack}>{t("backToList")}</Button>
+        {!empty && nextHref && <Button variant="contained" fullWidth component={Link} href={nextHref}>{t("toRecallMode")}</Button>}
+        <Button variant="outlined" fullWidth component={Link} href={backHref}>{t("backToList")}</Button>
       </Stack>
     </Stack>
   );
@@ -82,12 +84,11 @@ export function SlowEncodeMode({ list, initialWords }: SlowEncodeModeProps) {
     resetInputs();
   }
 
-  // Notify once the whole queue finishes (skip if queue was always empty)
-  useEffect(() => {
-    if (doneCount > 0 && queue.length === 0) {
-      commitEncodingResultsAction(resultsRef.current);
-    }
-  }, [doneCount, queue.length]);
+  // Persist once the whole queue finishes (skip if queue was always empty)
+  const save = useSessionCommit(
+    () => commitEncodingResultsAction(resultsRef.current),
+    doneCount > 0 && queue.length === 0,
+  );
 
   function handleHasImage() {
     if (!current) return;
@@ -146,17 +147,16 @@ export function SlowEncodeMode({ list, initialWords }: SlowEncodeModeProps) {
     moveToNext();
   }
 
-  const router = useRouter();
-  function goBack() { router.refresh(); router.push(`/lists/${listId}`); }
-  function goToRecall() { router.refresh(); router.push(`/lists/${listId}/recall`); }
+  const backHref = `/lists/${listId}`;
+  const recallHref = `/lists/${listId}/recall`;
 
-  if (total === 0 && doneCount === 0) return <CompletionState empty onBack={goBack} />;
-  if (!current && doneCount > 0) return <CompletionState onBack={goBack} onNext={encodedCount > 0 ? goToRecall : undefined} />;
+  if (total === 0 && doneCount === 0) return <CompletionState empty backHref={backHref} />;
+  if (!current && doneCount > 0) return <SessionSaveGate status={save.status} onRetry={save.retry}><CompletionState backHref={backHref} nextHref={encodedCount > 0 ? recallHref : undefined} /></SessionSaveGate>;
 
   return (
     <Stack spacing={3} sx={{ pb: STUDY_ACTION_BAR_OFFSET }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} onClick={goBack}>
+        <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} component={Link} href={backHref}>
           {t("back")}
         </Button>
         <Stack alignItems="flex-end">

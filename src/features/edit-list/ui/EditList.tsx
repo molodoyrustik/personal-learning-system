@@ -14,9 +14,9 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import type { List, LanguageCode } from "@/entities/list";
 import { ImportDrawer, type ImportedWord } from "@/features/import-words";
 import CloseIcon from "@mui/icons-material/Close";
@@ -39,7 +39,6 @@ type EditListProps = {
 };
 
 export function EditList({ list }: EditListProps) {
-  const router = useRouter();
   const t = useTranslations("Lists");
   const tCommon = useTranslations("Common");
 
@@ -125,7 +124,8 @@ export function EditList({ list }: EditListProps) {
           variant="text"
           size="small"
           sx={{ px: 0, minHeight: "auto", alignSelf: "flex-start" }}
-          onClick={() => router.push(`/lists/${list.id}`)}
+          component={Link}
+          href={`/lists/${list.id}`}
         >
           {t("backToLists")}
         </Button>

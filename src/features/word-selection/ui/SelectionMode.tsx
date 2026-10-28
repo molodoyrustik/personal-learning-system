@@ -1,13 +1,15 @@
 "use client";
 
 import { Button, Card, CardContent, Stack, Typography } from "@mui/material";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { List } from "@/entities/list";
 import { commitSelectionResultsAction } from "@/entities/word/api/word-actions";
 import type { Word } from "@/entities/word/model/types";
 import { STUDY_ACTION_BAR_OFFSET, StudyActionBar } from "@/shared/ui/StudyActionBar";
+import { useSessionCommit } from "@/shared/lib/use-session-commit";
+import { SessionSaveGate } from "@/shared/ui/SessionSaveGate";
 
 type SelectionModeProps = {
   list: List;
@@ -15,9 +17,8 @@ type SelectionModeProps = {
 };
 
 export function SelectionMode({ list, initialWords }: SelectionModeProps) {
-  const router = useRouter();
   const t = useTranslations("WordModes");
-  function goBack() { router.refresh(); router.push(`/lists/${list.id}`); }
+  const backHref = `/lists/${list.id}`;
 
   const [queue, setQueue] = useState<Word[]>(() =>
     initialWords.filter((w) => w.status === "new"),
@@ -33,12 +34,11 @@ export function SelectionMode({ list, initialWords }: SelectionModeProps) {
   const current = queue[0] ?? null;
   const isFinished = queue.length === 0;
 
-  // Notify once the whole queue finishes (skip if queue was always empty)
-  useEffect(() => {
-    if (processed > 0 && queue.length === 0) {
-      commitSelectionResultsAction(resultsRef.current);
-    }
-  }, [processed, queue.length]);
+  // Persist once the whole queue finishes (skip if queue was always empty)
+  const save = useSessionCommit(
+    () => commitSelectionResultsAction(resultsRef.current),
+    processed > 0 && queue.length === 0,
+  );
 
   function handleNeedToLearn() {
     if (!current) return;
@@ -58,7 +58,7 @@ export function SelectionMode({ list, initialWords }: SelectionModeProps) {
     setQueue((q) => [...q.slice(1), q[0]]);
   }
 
-  const goToEncoding = () => { router.refresh(); router.push(`/lists/${list.id}/encoding`); };
+  const encodingHref = `/lists/${list.id}/encoding`;
 
   if (total === 0 && processed === 0) {
     return (
@@ -69,25 +69,27 @@ export function SelectionMode({ list, initialWords }: SelectionModeProps) {
             {t("noNewWords")}
           </Typography>
         </Stack>
-        <Button variant="outlined" onClick={goBack}>{t("backToList")}</Button>
+        <Button variant="outlined" component={Link} href={backHref}>{t("backToList")}</Button>
       </Stack>
     );
   }
 
   if (isFinished && processed > 0) {
     return (
-      <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
-        <Stack spacing={1} alignItems="center">
-          <Typography variant="h2">{t("selectionComplete")}</Typography>
-          <Typography variant="body1" color="text.secondary" textAlign="center">
-            {t("allWordsProcessed")}
-          </Typography>
+      <SessionSaveGate status={save.status} onRetry={save.retry}>
+        <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
+          <Stack spacing={1} alignItems="center">
+            <Typography variant="h2">{t("selectionComplete")}</Typography>
+            <Typography variant="body1" color="text.secondary" textAlign="center">
+              {t("allWordsProcessed")}
+            </Typography>
+          </Stack>
+          <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 320 }}>
+            <Button variant="contained" fullWidth component={Link} href={encodingHref}>{t("toEncodingMode")}</Button>
+            <Button variant="outlined" fullWidth component={Link} href={backHref}>{t("backToList")}</Button>
+          </Stack>
         </Stack>
-        <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 320 }}>
-          <Button variant="contained" fullWidth onClick={goToEncoding}>{t("toEncodingMode")}</Button>
-          <Button variant="outlined" fullWidth onClick={goBack}>{t("backToList")}</Button>
-        </Stack>
-      </Stack>
+      </SessionSaveGate>
     );
   }
 
@@ -95,7 +97,7 @@ export function SelectionMode({ list, initialWords }: SelectionModeProps) {
     <>
       <Stack spacing={3} sx={{ pb: STUDY_ACTION_BAR_OFFSET }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} onClick={goBack}>
+          <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} component={Link} href={backHref}>
             {t("back")}
           </Button>
           <Typography variant="caption" color="text.secondary">

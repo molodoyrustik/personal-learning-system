@@ -11,9 +11,9 @@ import {
   Typography,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import type { Pattern } from "@/entities/pattern";
 import {
   updatePatternAction,
@@ -42,7 +42,6 @@ type EditPatternProps = {
 };
 
 export function EditPattern({ pattern, lessonId, courseId }: EditPatternProps) {
-  const router = useRouter();
   const t = useTranslations("Patterns");
   const tCommon = useTranslations("Common");
   const backHref =
@@ -122,7 +121,8 @@ export function EditPattern({ pattern, lessonId, courseId }: EditPatternProps) {
           variant="text"
           size="small"
           sx={{ px: 0, minHeight: "auto", alignSelf: "flex-start" }}
-          onClick={() => router.push(backHref)}
+          component={Link}
+          href={backHref}
         >
           {t("backToPattern")}
         </Button>

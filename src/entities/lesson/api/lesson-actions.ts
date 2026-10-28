@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { nowISO } from "@/shared/lib/date";
 import { generateId } from "@/shared/lib/ids";
-import { createClient } from "@/shared/lib/supabase/server";
+import { createClient, getUserId } from "@/shared/lib/supabase/server";
 
 export async function createLessonAction(input: {
   courseId: string;
@@ -11,10 +11,8 @@ export async function createLessonAction(input: {
   description?: string | null;
 }): Promise<void> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const userId = await getUserId(supabase);
+  if (!userId) throw new Error("Not authenticated");
 
   const { data: existing } = await supabase
     .from("lessons")
@@ -28,7 +26,7 @@ export async function createLessonAction(input: {
 
   await supabase.from("lessons").insert({
     id: generateId(),
-    user_id: user.id,
+    user_id: userId,
     course_id: input.courseId,
     title: input.title,
     description: input.description ?? null,

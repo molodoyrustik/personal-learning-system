@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -25,17 +25,22 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // getClaims() verifies the JWT locally (asymmetric signing key) instead of
+  // calling Supabase Auth on every request like getUser() did, and still
+  // refreshes the session cookies when the access token is about to expire.
+  const { data } = await supabase.auth.getClaims();
+  const isSignedIn = !!data?.claims;
 
-  const isAuthPage =
-    request.nextUrl.pathname === "/sign-in" ||
-    request.nextUrl.pathname === "/sign-up";
+  const { pathname } = request.nextUrl;
+  const isAuthPage = pathname === "/sign-in" || pathname === "/sign-up";
+  // The email-confirmation link lands here before any session exists.
+  const isAuthCallback = pathname.startsWith("/auth/");
 
-  if (!user && !isAuthPage) {
+  if (!isSignedIn && !isAuthPage && !isAuthCallback) {
     return NextResponse.redirect(new URL("/sign-in", request.url));
   }
 
-  if (user && isAuthPage) {
+  if (isSignedIn && isAuthPage) {
     return NextResponse.redirect(new URL("/courses", request.url));
   }
 
@@ -44,6 +49,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // manifest.webmanifest is excluded because browsers fetch it without
+    // cookies — the auth check would redirect it to /sign-in on every load.
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

@@ -8,8 +8,8 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { useState } from "react";
 
 type LessonFormProps = {
@@ -32,7 +32,6 @@ export function LessonForm({
   initialDescription = "",
   onSubmit,
 }: LessonFormProps) {
-  const router = useRouter();
   const tLessons = useTranslations("Lessons");
   const tCommon = useTranslations("Common");
   const [title, setTitle] = useState(initialTitle);
@@ -53,7 +52,8 @@ export function LessonForm({
   return (
     <Stack spacing={3} sx={{ maxWidth: 560 }}>
       <IconButton
-        onClick={() => router.push(backHref)}
+        component={Link}
+        href={backHref}
         size="small"
         sx={{ alignSelf: "flex-start" }}
         aria-label="Back"

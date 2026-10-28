@@ -14,7 +14,11 @@
     "newLine": "New line",
     "semicolon": "Semicolon ( ; )",
     "enterSeparator": "Enter separator",
-    "cannotBeUndone": "This action cannot be undone."
+    "cannotBeUndone": "This action cannot be undone.",
+    "savingResults": "Saving results…",
+    "saveResultsFailed": "Couldn't save your results. Check your connection and try again — nothing is lost as long as you stay on this page.",
+    "saveFailed": "Couldn't save. Please try again.",
+    "retry": "Retry"
   },
   "Nav": {
     "courses": "Courses",

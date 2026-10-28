@@ -16,7 +16,6 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { Characteristic } from "@/entities/characteristic";
@@ -54,7 +53,6 @@ type CharacteristicsProps = {
 };
 
 export function Characteristics({ characteristics }: CharacteristicsProps) {
-  const router = useRouter();
   const t = useTranslations("Characteristics");
   const tCommon = useTranslations("Common");
 
@@ -86,7 +84,6 @@ export function Characteristics({ characteristics }: CharacteristicsProps) {
     await createCharacteristicAction({ key: quickKey.trim(), description: quickDescription.trim(), example: null });
     setQuickKey("");
     setQuickDescription("");
-    router.refresh();
   }
 
   async function handleBulkImport() {
@@ -94,12 +91,10 @@ export function Characteristics({ characteristics }: CharacteristicsProps) {
     await createCharacteristicsAction(previewKeys);
     setRaw("");
     setDrawerOpen(false);
-    router.refresh();
   }
 
   async function handleDelete(id: string) {
     await deleteCharacteristicAction(id);
-    router.refresh();
   }
 
   return (

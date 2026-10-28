@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Stack, Typography } from "@mui/material";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import type { List } from "@/entities/list";
@@ -22,23 +22,26 @@ import {
   isInSkippedQueue,
 } from "@/shared/model/app-store";
 import { STUDY_ACTION_BAR_OFFSET } from "@/shared/ui/StudyActionBar";
+import { useSessionCommit } from "@/shared/lib/use-session-commit";
+import { SessionSaveGate } from "@/shared/ui/SessionSaveGate";
 
 type SkippedModeProps = {
   list: List;
   initialWords: Word[];
+  run: number;
 };
 
 type Step = 1 | 2 | 3 | 4;
 
 type Outcomes = { encoded: number; skippedAgain: number; sentToSlowEncode: number };
 
-function CompletionState({ empty, outcomes, onBack, onGoToAgain, onGoToSlowEncode, onGoToRecall }: {
+function CompletionState({ empty, outcomes, backHref, againHref, slowEncodeHref, recallHref }: {
   empty?: boolean;
   outcomes: Outcomes;
-  onBack: () => void;
-  onGoToAgain: () => void;
-  onGoToSlowEncode: () => void;
-  onGoToRecall: () => void;
+  backHref: string;
+  againHref: string;
+  slowEncodeHref: string;
+  recallHref: string;
 }) {
   const t = useTranslations("WordModes");
   const { encoded, skippedAgain, sentToSlowEncode } = outcomes;
@@ -58,24 +61,24 @@ function CompletionState({ empty, outcomes, onBack, onGoToAgain, onGoToSlowEncod
       </Stack>
       <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 320 }}>
         {!empty && skippedAgain > 0 && (
-          <Button variant="contained" fullWidth onClick={onGoToAgain}>{t("skippedAgain")}</Button>
+          <Button variant="contained" fullWidth component={Link} href={againHref}>{t("skippedAgain")}</Button>
         )}
         {!empty && sentToSlowEncode > 0 && (
-          <Button variant={skippedAgain > 0 ? "outlined" : "contained"} fullWidth onClick={onGoToSlowEncode}>{t("toSlowEncode")}</Button>
+          <Button variant={skippedAgain > 0 ? "outlined" : "contained"} fullWidth component={Link} href={slowEncodeHref}>{t("toSlowEncode")}</Button>
         )}
         {!empty && encoded > 0 && skippedAgain === 0 && sentToSlowEncode === 0 && (
-          <Button variant="contained" fullWidth onClick={onGoToRecall}>{t("toRecallMode")}</Button>
+          <Button variant="contained" fullWidth component={Link} href={recallHref}>{t("toRecallMode")}</Button>
         )}
         {empty && (
-          <Button variant="contained" fullWidth onClick={onGoToSlowEncode}>{t("toSlowEncode")}</Button>
+          <Button variant="contained" fullWidth component={Link} href={slowEncodeHref}>{t("toSlowEncode")}</Button>
         )}
-        <Button variant="outlined" fullWidth onClick={onBack}>{t("backToList")}</Button>
+        <Button variant="outlined" fullWidth component={Link} href={backHref}>{t("backToList")}</Button>
       </Stack>
     </Stack>
   );
 }
 
-export function SkippedMode({ list, initialWords }: SkippedModeProps) {
+export function SkippedMode({ list, initialWords, run }: SkippedModeProps) {
   const listId = list.id;
   const t = useTranslations("WordModes");
   const [queue, setQueue] = useState<Word[]>(() =>
@@ -138,12 +141,11 @@ export function SkippedMode({ list, initialWords }: SkippedModeProps) {
   const currentRef = useRef(current);
   currentRef.current = current;
 
-  // Notify once the whole queue finishes (skip if queue was always empty)
-  useEffect(() => {
-    if (doneCount > 0 && queue.length === 0) {
-      commitEncodingResultsAction(resultsRef.current);
-    }
-  }, [doneCount, queue.length]);
+  // Persist once the whole queue finishes (skip if queue was always empty)
+  const save = useSessionCommit(
+    () => commitEncodingResultsAction(resultsRef.current),
+    doneCount > 0 && queue.length === 0,
+  );
 
   useEffect(() => {
     if (!current) return;
@@ -214,14 +216,14 @@ export function SkippedMode({ list, initialWords }: SkippedModeProps) {
     moveToNext();
   }
 
-  const router = useRouter();
-  function goBack() { router.refresh(); router.push(`/lists/${listId}`); }
-  function goToAgain() { window.location.href = `/lists/${listId}/skipped`; }
-  function goToSlowEncode() { router.refresh(); router.push(`/lists/${listId}/slow-encode`); }
-  function goToRecall() { router.refresh(); router.push(`/lists/${listId}/recall`); }
+  const backHref = `/lists/${listId}`;
+  // A new `run` param makes the page remount this mode with fresh words.
+  const againHref = `/lists/${listId}/skipped?run=${run + 1}`;
+  const slowEncodeHref = `/lists/${listId}/slow-encode`;
+  const recallHref = `/lists/${listId}/recall`;
 
-  if (total === 0 && doneCount === 0) return <CompletionState empty outcomes={outcomes} onBack={goBack} onGoToAgain={goToAgain} onGoToSlowEncode={goToSlowEncode} onGoToRecall={goToRecall} />;
-  if (!current && doneCount > 0) return <CompletionState outcomes={outcomes} onBack={goBack} onGoToAgain={goToAgain} onGoToSlowEncode={goToSlowEncode} onGoToRecall={goToRecall} />;
+  if (total === 0 && doneCount === 0) return <CompletionState empty outcomes={outcomes} backHref={backHref} againHref={againHref} slowEncodeHref={slowEncodeHref} recallHref={recallHref} />;
+  if (!current && doneCount > 0) return <SessionSaveGate status={save.status} onRetry={save.retry}><CompletionState outcomes={outcomes} backHref={backHref} againHref={againHref} slowEncodeHref={slowEncodeHref} recallHref={recallHref} /></SessionSaveGate>;
 
   const passUi = getTimedPassNumber(current) ?? 2;
   const limitSec = getEncodingTimeLimit(current) ?? 15;
@@ -229,7 +231,7 @@ export function SkippedMode({ list, initialWords }: SkippedModeProps) {
   return (
     <Stack spacing={3} sx={{ pb: STUDY_ACTION_BAR_OFFSET }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} onClick={goBack}>
+        <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} component={Link} href={backHref}>
           {t("back")}
         </Button>
         <Stack alignItems="flex-end" spacing={0.25}>

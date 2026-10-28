@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/shared/lib/supabase/server";
+import { createClient, getUserId } from "@/shared/lib/supabase/server";
 import { nowISO } from "@/shared/lib/date";
 import { generateId } from "@/shared/lib/ids";
 
@@ -10,17 +10,15 @@ export async function createCourseAction(input: {
   description?: string | null;
 }): Promise<{ courseId: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const userId = await getUserId(supabase);
+  if (!userId) throw new Error("Not authenticated");
 
   const id = generateId();
   const now = nowISO();
 
   const { error } = await supabase.from("courses").insert({
     id,
-    user_id: user.id,
+    user_id: userId,
     title: input.title,
     description: input.description ?? null,
     created_at: now,

@@ -71,7 +71,6 @@ export function CourseDetails({
       await createLessonAction({ courseId: course.id, title });
       setLessonTitle("");
       setAddLessonOpen(false);
-      router.refresh();
     } finally {
       setLessonPending(false);
     }
@@ -146,7 +145,8 @@ export function CourseDetails({
 
       <Button
         variant="text"
-        onClick={() => router.push("/courses")}
+        component={Link}
+        href="/courses"
         size="small"
         sx={{ alignSelf: "flex-start" }}
       >

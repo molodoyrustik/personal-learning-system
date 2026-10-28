@@ -25,3 +25,13 @@ export async function createClient() {
     },
   );
 }
+
+// Verifies the session JWT locally against the project's asymmetric signing
+// key (its JWKS is fetched once and cached) — unlike auth.getUser(), this
+// costs no round-trip to Supabase Auth on every request.
+export async function getUserId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<string | null> {
+  const { data } = await supabase.auth.getClaims();
+  return data?.claims.sub ?? null;
+}

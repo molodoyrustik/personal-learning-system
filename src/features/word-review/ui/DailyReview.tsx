@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Alert,
   Button,
   Card,
   CardContent,
@@ -8,7 +9,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { ReviewRating } from "@/entities/word";
@@ -37,11 +38,13 @@ type DailyReviewProps = {
 };
 
 export function DailyReview({ listId, initialWords }: DailyReviewProps) {
-  const router = useRouter();
   const t = useTranslations("WordModes");
+  const tCommon = useTranslations("Common");
   const [queue, setQueue] = useState<ReviewWord[]>(initialWords);
   const [isAnswerVisible, setIsAnswerVisible] = useState(false);
   const [doneCount, setDoneCount] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
 
   const total = initialWords.length;
   const current = queue[0] ?? null;
@@ -53,9 +56,19 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
   }
 
   async function handleRate(rating: ReviewRating) {
-    if (!current) return;
-    await markReviewResultAction(current.id, rating);
-    moveToNext();
+    if (!current || isSaving) return;
+    setIsSaving(true);
+    setSaveFailed(false);
+    try {
+      await markReviewResultAction(current.id, rating);
+      moveToNext();
+    } catch (error) {
+      // Stay on the same card so the rating can simply be tapped again.
+      console.error("Failed to save review rating", error);
+      setSaveFailed(true);
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   if (total === 0) {
@@ -74,10 +87,8 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
         </Stack>
         <Button
           variant="outlined"
-          onClick={() => {
-            router.refresh();
-            router.push(`/lists/${listId}`);
-          }}
+          component={Link}
+          href={`/lists/${listId}`}
         >
           {t("backToList")}
         </Button>
@@ -104,10 +115,8 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
         </Stack>
         <Button
           variant="outlined"
-          onClick={() => {
-            router.refresh();
-            router.push(`/lists/${listId}`);
-          }}
+          component={Link}
+          href={`/lists/${listId}`}
         >
           {t("backToList")}
         </Button>
@@ -182,6 +191,11 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
       </Stack>
 
       <StudyActionBar>
+        {saveFailed && (
+          <Alert severity="error" sx={{ mb: 1 }}>
+            {tCommon("saveFailed")}
+          </Alert>
+        )}
         {!isAnswerVisible ? (
           <Button
             variant="contained"
@@ -196,6 +210,7 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
               variant="outlined"
               color="error"
               fullWidth
+              disabled={isSaving}
               onClick={() => handleRate(AGAIN)}
             >
               {t("rateAgain")}
@@ -204,6 +219,7 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
               variant="outlined"
               color="warning"
               fullWidth
+              disabled={isSaving}
               onClick={() => handleRate(HARD)}
             >
               {t("rateHard")}
@@ -211,6 +227,7 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
             <Button
               variant="contained"
               fullWidth
+              disabled={isSaving}
               onClick={() => handleRate(GOOD)}
             >
               {t("rateGood")}
@@ -219,6 +236,7 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
               variant="outlined"
               color="success"
               fullWidth
+              disabled={isSaving}
               onClick={() => handleRate(EASY)}
             >
               {t("rateEasy")}

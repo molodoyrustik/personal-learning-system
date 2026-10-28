@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { nowISO } from "@/shared/lib/date";
 import { generateId } from "@/shared/lib/ids";
-import { createClient } from "@/shared/lib/supabase/server";
+import { createClient, getUserId } from "@/shared/lib/supabase/server";
+import { updateRowsAtomically } from "@/shared/lib/supabase/update-rows";
 import type { PracticeMode } from "@/shared/model/patterns-store";
 
 // Clean Full Practice passes required before a sentence graduates to "known".
@@ -13,11 +14,9 @@ const TOTAL_FULL_PRACTICE_PASSES = 3;
 
 async function getSupabase() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-  return { supabase, userId: user.id };
+  const userId = await getUserId(supabase);
+  if (!userId) throw new Error("Not authenticated");
+  return { supabase, userId };
 }
 
 export async function createPatternWithSentences(params: {
@@ -134,6 +133,13 @@ export async function deletePatternAction(patternId: string) {
   redirect("/patterns");
 }
 
+// Sentence progress is shown on pattern pages and rolled up into course
+// lesson statuses — see revalidateWordProgress in word-actions.
+function revalidatePatternProgress() {
+  revalidatePath("/patterns/[patternId]", "page");
+  revalidatePath("/courses/[courseId]", "page");
+}
+
 // Applies status transitions for a whole practice session in one go. Called
 // only once the user has gone through every sentence in the queue — quitting
 // partway through (Back button, closing the tab) discards the session
@@ -148,67 +154,55 @@ export async function commitPracticeSessionAction(
   const { supabase } = await getSupabase();
   const now = nowISO();
 
-  if (mode === "full-practice") {
-    const correctIds = results.filter((r) => r.correct).map((r) => r.sentenceId);
-    const { data: rows } = correctIds.length
-      ? await supabase
-          .from("pattern_sentences")
-          .select("id, full_practice_success_count")
-          .in("id", correctIds)
-      : { data: [] };
-    const successCountById = new Map(
-      (rows ?? []).map((r) => [
-        r.id as string,
-        r.full_practice_success_count as number,
-      ]),
-    );
+  await updateRowsAtomically(
+    supabase,
+    "pattern_sentences",
+    new Map(results.map((r) => [r.sentenceId, r.correct])),
+    (row, correct) => {
+      // Any mistake (in every mode) routes back to Review Marked.
+      if (!correct) {
+        return { status: "marked", last_practiced_at: now, updated_at: now };
+      }
 
-    await Promise.all(
-      results.map(({ sentenceId, correct }) => {
-        if (!correct) {
-          return supabase
-            .from("pattern_sentences")
-            .update({ status: "marked", last_practiced_at: now, updated_at: now })
-            .eq("id", sentenceId);
-        }
-        const successCount = (successCountById.get(sentenceId) ?? 0) + 1;
-        return supabase
-          .from("pattern_sentences")
-          .update({
-            full_practice_success_count: successCount,
-            status:
-              successCount >= TOTAL_FULL_PRACTICE_PASSES ? "known" : "learning",
-            last_practiced_at: now,
-            updated_at: now,
-          })
-          .eq("id", sentenceId);
-      }),
-    );
-    return;
-  }
+      // First Pass / Review Marked: correct -> learning.
+      if (mode !== "full-practice") {
+        return { status: "learning", last_practiced_at: now, updated_at: now };
+      }
 
-  // First Pass / Review Marked: correct -> learning, mistake -> marked.
-  await Promise.all(
-    results.map(({ sentenceId, correct }) =>
-      supabase
-        .from("pattern_sentences")
-        .update({
-          status: correct ? "learning" : "marked",
-          last_practiced_at: now,
-          updated_at: now,
-        })
-        .eq("id", sentenceId),
-    ),
+      const successCount =
+        ((row.full_practice_success_count as number) ?? 0) + 1;
+      return {
+        full_practice_success_count: successCount,
+        status:
+          successCount >= TOTAL_FULL_PRACTICE_PASSES ? "known" : "learning",
+        last_practiced_at: now,
+        updated_at: now,
+      };
+    },
   );
+  revalidatePatternProgress();
 }
 
-export async function addFullRunAction(patternId: string, durationSec: number) {
+// runId is generated once per session on the client, so retrying a failed
+// save never records the same run twice.
+export async function addFullRunAction(
+  runId: string,
+  patternId: string,
+  durationSec: number,
+) {
   const { supabase, userId } = await getSupabase();
-  await supabase.from("pattern_runs").insert({
-    id: generateId(),
-    user_id: userId,
-    pattern_id: patternId,
-    duration_sec: durationSec,
-    completed_at: nowISO(),
-  });
+  await supabase
+    .from("pattern_runs")
+    .upsert(
+      {
+        id: runId,
+        user_id: userId,
+        pattern_id: patternId,
+        duration_sec: durationSec,
+        completed_at: nowISO(),
+      },
+      { onConflict: "id", ignoreDuplicates: true },
+    )
+    .throwOnError();
+  revalidatePatternProgress();
 }

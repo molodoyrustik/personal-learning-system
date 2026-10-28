@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/shared/lib/supabase/server";
+import { createClient, getUserId } from "@/shared/lib/supabase/server";
 import { nowISO } from "@/shared/lib/date";
 import { generateId } from "@/shared/lib/ids";
 import type { LanguageCode } from "@/entities/list";
@@ -34,15 +34,15 @@ export async function createListWithWords(params: {
   words: { sourceText: string; targetText: string }[];
 }): Promise<{ listId: string }> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const userId = await getUserId(supabase);
+  if (!userId) throw new Error("Not authenticated");
 
   const listId = generateId();
   const now = nowISO();
 
   await supabase.from("lists").insert({
     id: listId,
-    user_id: user.id,
+    user_id: userId,
     name: params.name,
     description: params.description,
     source_language: params.sourceLanguage,
@@ -55,7 +55,7 @@ export async function createListWithWords(params: {
     await supabase.from("words").insert(
       params.words.map(({ sourceText, targetText }, i) => ({
         id: generateId(),
-        user_id: user.id,
+        user_id: userId,
         list_id: listId,
         source_text: sourceText,
         target_text: targetText,
@@ -86,13 +86,13 @@ export async function addWordsToListAction(
 ): Promise<void> {
   if (words.length === 0) return;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const userId = await getUserId(supabase);
+  if (!userId) throw new Error("Not authenticated");
 
   await supabase.from("words").insert(
     words.map(({ sourceText, targetText }, i) => ({
       id: generateId(),
-      user_id: user.id,
+      user_id: userId,
       list_id: listId,
       source_text: sourceText,
       target_text: targetText,

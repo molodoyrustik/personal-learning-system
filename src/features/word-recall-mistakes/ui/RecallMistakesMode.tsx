@@ -8,14 +8,16 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { List } from "@/entities/list";
 import type { Word } from "@/entities/word/model/types";
 import { commitRecallMistakesResultsAction } from "@/entities/word/api/word-actions";
 import { PronounceButton } from "@/shared/ui/PronounceButton";
 import { STUDY_ACTION_BAR_OFFSET, StudyActionBar } from "@/shared/ui/StudyActionBar";
+import { useSessionCommit } from "@/shared/lib/use-session-commit";
+import { SessionSaveGate } from "@/shared/ui/SessionSaveGate";
 
 const TOTAL_ROUNDS = 6;
 
@@ -26,7 +28,6 @@ type RecallMistakesModeProps = {
 
 export function RecallMistakesMode({ list, initialWords }: RecallMistakesModeProps) {
   const t = useTranslations("WordModes");
-  const router = useRouter();
 
   const [queue, setQueue] = useState<Word[]>(() =>
     initialWords.filter((w) => w.status === "marked"),
@@ -39,7 +40,7 @@ export function RecallMistakesMode({ list, initialWords }: RecallMistakesModePro
   // Quitting early (Back button, closing the tab) never persists anything.
   const resultsRef = useRef<{ wordId: string; remembered: boolean }[]>([]);
 
-  function goBack() { router.refresh(); router.push(`/lists/${list.id}`); }
+  const backHref = `/lists/${list.id}`;
 
   const total = queue.length;
   const current = queue[0] ?? null;
@@ -51,12 +52,11 @@ export function RecallMistakesMode({ list, initialWords }: RecallMistakesModePro
   const toLang = isForward ? list.targetLanguage.toUpperCase() : list.sourceLanguage.toUpperCase();
   const currentRound = current ? current.recallSuccessCount + 1 : 0;
 
-  // Notify once the whole queue finishes (skip if queue was always empty)
-  useEffect(() => {
-    if (doneCount > 0 && queue.length === 0) {
-      commitRecallMistakesResultsAction(resultsRef.current);
-    }
-  }, [doneCount, queue.length]);
+  // Persist once the whole queue finishes (skip if queue was always empty)
+  const save = useSessionCommit(
+    () => commitRecallMistakesResultsAction(resultsRef.current),
+    doneCount > 0 && queue.length === 0,
+  );
 
   function moveToNext() {
     setQueue((q) => q.slice(1));
@@ -85,22 +85,24 @@ export function RecallMistakesMode({ list, initialWords }: RecallMistakesModePro
             {t("noMarkedWords")}
           </Typography>
         </Stack>
-        <Button variant="outlined" onClick={goBack}>{t("backToList")}</Button>
+        <Button variant="outlined" component={Link} href={backHref}>{t("backToList")}</Button>
       </Stack>
     );
   }
 
   if (!current && doneCount > 0) {
     return (
-      <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
-        <Stack spacing={1} alignItems="center">
-          <Typography variant="h2">{t("passComplete")}</Typography>
-          <Typography variant="body1" color="text.secondary" textAlign="center">
-            {t("recallMistakesComplete")}
-          </Typography>
+      <SessionSaveGate status={save.status} onRetry={save.retry}>
+        <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
+          <Stack spacing={1} alignItems="center">
+            <Typography variant="h2">{t("passComplete")}</Typography>
+            <Typography variant="body1" color="text.secondary" textAlign="center">
+              {t("recallMistakesComplete")}
+            </Typography>
+          </Stack>
+          <Button variant="outlined" component={Link} href={backHref}>{t("backToList")}</Button>
         </Stack>
-        <Button variant="outlined" onClick={goBack}>{t("backToList")}</Button>
-      </Stack>
+      </SessionSaveGate>
     );
   }
 
@@ -108,7 +110,7 @@ export function RecallMistakesMode({ list, initialWords }: RecallMistakesModePro
     <>
       <Stack spacing={3} sx={{ pb: STUDY_ACTION_BAR_OFFSET }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} onClick={goBack}>
+          <Button variant="text" size="small" sx={{ px: 0, minHeight: "auto" }} component={Link} href={backHref}>
             {t("back")}
           </Button>
           <Stack alignItems="flex-end" spacing={0}>

@@ -19,6 +19,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import type { LanguageCode } from "@/entities/list";
 import { ImportDrawer, type ImportedWord } from "@/features/import-words";
 import { createListWithWords } from "@/features/add-new-list/actions";
@@ -107,7 +108,6 @@ export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
       });
       if (fromLesson) {
         await addWordListToLessonAction(lessonId!, listId, courseId!);
-        router.refresh();
         router.push(`/courses/${courseId}/lessons/${lessonId}`);
       } else {
         router.push(`/lists/${listId}`);
@@ -125,11 +125,8 @@ export function AddNewList({ lessonId, courseId }: AddNewListProps = {}) {
             variant="text"
             size="small"
             sx={{ px: 0, minHeight: "auto" }}
-            onClick={() =>
-              fromLesson
-                ? router.push(`/courses/${courseId}/lessons/${lessonId}`)
-                : router.push("/lists")
-            }
+            component={Link}
+            href={fromLesson ? `/courses/${courseId}/lessons/${lessonId}` : "/lists"}
           >
             {fromLesson ? t("backToLesson") : t("backToLists")}
           </Button>

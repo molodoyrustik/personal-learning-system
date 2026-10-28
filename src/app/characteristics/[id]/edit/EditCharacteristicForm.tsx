@@ -29,7 +29,6 @@ export function EditCharacteristicForm({ item }: EditCharacteristicFormProps) {
         description: description.trim(),
         example: example.trim() || null,
       });
-      router.refresh();
       router.push("/characteristics");
     } finally {
       setLoading(false);

@@ -9,11 +9,13 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { PatternSentence } from "@/entities/pattern";
 import { STUDY_ACTION_BAR_OFFSET, StudyActionBar } from "@/shared/ui/StudyActionBar";
+import { useSessionCommit } from "@/shared/lib/use-session-commit";
+import { SessionSaveGate } from "@/shared/ui/SessionSaveGate";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -72,7 +74,6 @@ export function SentencePracticeFlow({
   // Both the queue and the sentences map are snapshotted on mount, and stay
   // fixed for the whole session — nothing is persisted (and the parent's
   // `sentences` prop never changes) until onComplete fires at the very end.
-  const router = useRouter();
 
   const [queue, setQueue] = useState<string[]>(() => sentences.map((s) => s.id));
   const [sentencesMap] = useState(
@@ -95,10 +96,6 @@ export function SentencePracticeFlow({
     if (!currentId) return;
     resultsRef.current.push({ sentenceId: currentId, correct });
   }
-
-  // Keep callback ref current so timer closures never see a stale prop
-  const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
 
   // Timer handle refs — stored in refs so cancelTimer() works from any handler
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -143,12 +140,12 @@ export function SentencePracticeFlow({
     return cancelTimer;
   }, [currentId, timed, revealAnswer]);
 
-  // Notify parent when the whole queue finishes (skip if queue was always empty)
-  useEffect(() => {
-    if (doneCount > 0 && queue.length === 0) {
-      onCompleteRef.current(resultsRef.current);
-    }
-  }, [doneCount, queue.length]);
+  // Persist via the parent once the whole queue finishes (skip if queue was
+  // always empty)
+  const save = useSessionCommit(
+    () => Promise.resolve(onComplete(resultsRef.current)),
+    doneCount > 0 && queue.length === 0,
+  );
 
   // ---------------------------------------------------------------------------
   // Handlers
@@ -183,12 +180,6 @@ export function SentencePracticeFlow({
   // Render: empty state (queue started empty)
   // ---------------------------------------------------------------------------
 
-  function handleBack() {
-    cancelTimer();
-    router.refresh();
-    router.push(backHref);
-  }
-
   if (queue.length === 0 && doneCount === 0) {
     return (
       <Stack
@@ -203,7 +194,7 @@ export function SentencePracticeFlow({
             {emptyLabel}
           </Typography>
         </Stack>
-        <Button variant="outlined" onClick={handleBack}>{tCommon("back")}</Button>
+        <Button variant="outlined" component={Link} href={backHref} onClick={cancelTimer}>{tCommon("back")}</Button>
       </Stack>
     );
   }
@@ -214,20 +205,22 @@ export function SentencePracticeFlow({
 
   if (queue.length === 0) {
     return (
-      <Stack
-        spacing={3}
-        alignItems="center"
-        justifyContent="center"
-        sx={{ minHeight: "60vh" }}
-      >
-        <Stack spacing={1} alignItems="center">
-          <Typography variant="h2">{t("reviewComplete")}</Typography>
-          <Typography variant="body1" color="text.secondary" textAlign="center">
-            {completeLabel}
-          </Typography>
+      <SessionSaveGate status={save.status} onRetry={save.retry}>
+        <Stack
+          spacing={3}
+          alignItems="center"
+          justifyContent="center"
+          sx={{ minHeight: "60vh" }}
+        >
+          <Stack spacing={1} alignItems="center">
+            <Typography variant="h2">{t("reviewComplete")}</Typography>
+            <Typography variant="body1" color="text.secondary" textAlign="center">
+              {completeLabel}
+            </Typography>
+          </Stack>
+          <Button variant="outlined" component={Link} href={backHref} onClick={cancelTimer}>{tCommon("back")}</Button>
         </Stack>
-        <Button variant="outlined" onClick={handleBack}>{tCommon("back")}</Button>
-      </Stack>
+      </SessionSaveGate>
     );
   }
 
@@ -250,7 +243,9 @@ export function SentencePracticeFlow({
             variant="text"
             size="small"
             sx={{ px: 0, minHeight: "auto" }}
-            onClick={handleBack}
+            component={Link}
+            href={backHref}
+            onClick={cancelTimer}
           >
             {tCommon("back")}
           </Button>
