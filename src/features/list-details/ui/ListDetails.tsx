@@ -100,6 +100,10 @@ export function ListDetails({ list, words, reviewCount, lessonHref }: ListDetail
     [words],
   );
   const markedQueue = useMemo(() => words.filter((w) => w.status === "marked"), [words]);
+  const reviewQueue = useMemo(
+    () => words.filter((w) => w.status === "memorized" || w.status === "reviewing"),
+    [words],
+  );
 
   const recallRounds = useMemo(
     () => Array.from({ length: 6 }, (_, i) => recallQueue.filter((w) => w.recallSuccessCount === i).length),
@@ -140,7 +144,13 @@ export function ListDetails({ list, words, reviewCount, lessonHref }: ListDetail
       active: markedQueue.length > 0,
       detail: null,
     },
-    { label: t("review"), href: "review", count: reviewCount, active: reviewCount > 0, detail: null },
+    {
+      label: t("review"),
+      href: "review",
+      count: reviewQueue.length,
+      active: reviewQueue.length > 0,
+      detail: reviewCount > 0 ? t("reviewDue", { count: reviewCount }) : null,
+    },
   ];
 
   return (

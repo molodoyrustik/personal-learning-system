@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import type { LanguageCode } from "@/entities/list";
 import type { ReviewRating } from "@/entities/word";
 import { markReviewResultAction } from "@/entities/word/api/word-actions";
 import { STUDY_ACTION_BAR_OFFSET, StudyActionBar } from "@/shared/ui/StudyActionBar";
@@ -32,14 +33,26 @@ type ReviewWord = {
   next_review_at: string | null;
 };
 
+// "forward" asks source → target (the direction words were encoded in);
+// "reverse" asks target → source. Both feed the same FSRS card.
+type Direction = "forward" | "reverse";
+
 type DailyReviewProps = {
   listId: string;
+  sourceLanguage: LanguageCode;
+  targetLanguage: LanguageCode;
   initialWords: ReviewWord[];
 };
 
-export function DailyReview({ listId, initialWords }: DailyReviewProps) {
+export function DailyReview({
+  listId,
+  sourceLanguage,
+  targetLanguage,
+  initialWords,
+}: DailyReviewProps) {
   const t = useTranslations("WordModes");
   const tCommon = useTranslations("Common");
+  const [direction, setDirection] = useState<Direction | null>(null);
   const [queue, setQueue] = useState<ReviewWord[]>(initialWords);
   const [isAnswerVisible, setIsAnswerVisible] = useState(false);
   const [doneCount, setDoneCount] = useState(0);
@@ -48,6 +61,9 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
 
   const total = initialWords.length;
   const current = queue[0] ?? null;
+  const isReverse = direction === "reverse";
+  const forwardLabel = `${sourceLanguage.toUpperCase()} → ${targetLanguage.toUpperCase()}`;
+  const reverseLabel = `${targetLanguage.toUpperCase()} → ${sourceLanguage.toUpperCase()}`;
 
   function moveToNext() {
     setQueue((q) => q.slice(1));
@@ -96,6 +112,49 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
     );
   }
 
+  if (direction === null) {
+    return (
+      <Stack
+        spacing={3}
+        alignItems="center"
+        justifyContent="center"
+        sx={{ minHeight: "60vh" }}
+      >
+        <Stack spacing={1} alignItems="center">
+          <Typography variant="h2">{t("dailyReview")}</Typography>
+          <Typography variant="body1" color="text.secondary" textAlign="center">
+            {t("chooseDirection")}
+          </Typography>
+        </Stack>
+        <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 320 }}>
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={() => setDirection("forward")}
+          >
+            {forwardLabel}
+          </Button>
+          <Button
+            variant="outlined"
+            fullWidth
+            onClick={() => setDirection("reverse")}
+          >
+            {reverseLabel}
+          </Button>
+        </Stack>
+        <Button variant="text" component={Link} href={`/lists/${listId}`}>
+          {t("backToList")}
+        </Button>
+      </Stack>
+    );
+  }
+
+  // In reverse the scene and association are built around the target word's
+  // sound, so they would give the answer away — reveal them with the answer.
+  const prompt = isReverse ? current?.target_text : current?.source_text;
+  const answer = isReverse ? current?.source_text : current?.target_text;
+  const showHints = !isReverse || isAnswerVisible;
+
   if (!current) {
     return (
       <Stack
@@ -130,7 +189,7 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Typography variant="h1">{t("dailyReview")}</Typography>
           <Typography variant="caption" color="text.secondary">
-            {doneCount + 1} / {total}
+            {isReverse ? reverseLabel : forwardLabel} · {doneCount + 1} / {total}
           </Typography>
         </Stack>
 
@@ -139,11 +198,11 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
             <Stack spacing={2.5}>
               <Stack spacing={0.5} alignItems="center">
                 <Typography variant="h1" textAlign="center">
-                  {current.source_text}
+                  {prompt}
                 </Typography>
               </Stack>
 
-              {current.scene_description && (
+              {showHints && current.scene_description && (
                 <>
                   <Divider />
                   <Stack spacing={0.5}>
@@ -156,7 +215,7 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
                   </Stack>
                 </>
               )}
-              {current.sound_association && (
+              {showHints && current.sound_association && (
                 <Stack spacing={0.5}>
                   <Typography variant="caption" color="text.secondary">
                     {t("association")}
@@ -180,7 +239,7 @@ export function DailyReview({ listId, initialWords }: DailyReviewProps) {
                   <Divider />
                   <Stack alignItems="center" sx={{ py: 1 }}>
                     <Typography variant="h2" color="primary">
-                      {current.target_text}
+                      {answer}
                     </Typography>
                   </Stack>
                 </>

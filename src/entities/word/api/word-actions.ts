@@ -233,14 +233,17 @@ export async function markReviewResultAction(
   revalidateWordProgress();
 }
 
-export async function getDueReviewWordsByListId(listId: string) {
+// Review is always open: every word that finished Recall is available, not
+// just the due ones. Ordered by next_review_at, so overdue words come first,
+// then the ones FSRS expects to be forgotten soonest. Reviewing ahead of
+// schedule is safe — FSRS grows the interval less for an early review.
+export async function getReviewWordsByListId(listId: string) {
   const supabase = await getSupabase();
   const { data } = await supabase
     .from("words")
     .select("*")
     .eq("list_id", listId)
     .in("status", ["memorized", "reviewing"])
-    .lte("next_review_at", nowISO())
     .order("next_review_at");
   return data ?? [];
 }

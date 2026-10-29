@@ -21,7 +21,7 @@ import { SessionSaveGate } from "@/shared/ui/SessionSaveGate";
 // Constants
 // ---------------------------------------------------------------------------
 
-const TIMER_SEC = 5;
+const TIMER_SEC = 10;
 
 // ---------------------------------------------------------------------------
 // Types

@@ -1,5 +1,7 @@
 import { Container } from "@mui/material";
-import { getDueReviewWordsByListId } from "@/entities/word/api/word-actions";
+import { notFound } from "next/navigation";
+import { getListById } from "@/entities/list/api/list-api";
+import { getReviewWordsByListId } from "@/entities/word/api/word-actions";
 import { DailyReview } from "@/features/word-review/ui/DailyReview";
 
 type ReviewPageProps = {
@@ -8,10 +10,19 @@ type ReviewPageProps = {
 
 export default async function ListReviewPage({ params }: ReviewPageProps) {
   const { listId } = await params;
-  const words = await getDueReviewWordsByListId(listId);
+  const [list, words] = await Promise.all([
+    getListById(listId),
+    getReviewWordsByListId(listId),
+  ]);
+  if (!list) notFound();
   return (
     <Container sx={{ py: 4 }}>
-      <DailyReview listId={listId} initialWords={words} />
+      <DailyReview
+        listId={listId}
+        sourceLanguage={list.sourceLanguage}
+        targetLanguage={list.targetLanguage}
+        initialWords={words}
+      />
     </Container>
   );
 }
