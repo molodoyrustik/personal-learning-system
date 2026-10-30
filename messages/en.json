@@ -131,6 +131,8 @@
     "statusMemorized": "Memorized",
     "statusReviewing": "Reviewing",
     "statusKnown": "Known",
+    "statusAlreadyKnown": "Already known",
+    "statusNotNeeded": "Not needed",
     "statusSlowEncode": "Slow Encode"
   },
   "Patterns": {
@@ -203,6 +205,7 @@
     "toEncodingMode": "→ Encoding Mode",
     "needToLearn": "Need to learn",
     "iKnow": "I know",
+    "notNeeded": "Not needed",
     "skip": "Skip",
     "back": "← Back",
     "done": "done",

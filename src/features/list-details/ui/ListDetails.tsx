@@ -63,7 +63,7 @@ export function ListDetails({ list, words, reviewCount, lessonHref }: ListDetail
   const STATUS_LABELS: Record<WordStatus, string> = {
     new: t("statusNew"),
     selected: t("statusSelected"),
-    rejected: t("statusSkipped"),
+    rejected: t("statusNotNeeded"),
     skipped: t("statusSkipped"),
     encoded: t("statusEncoded"),
     learning: t("statusLearning"),
@@ -72,6 +72,17 @@ export function ListDetails({ list, words, reviewCount, lessonHref }: ListDetail
     reviewing: t("statusReviewing"),
     known: t("statusKnown"),
   };
+
+  // "rejected" covers two Selection outcomes — label by the decision instead
+  function statusLabel(word: Word) {
+    if (word.status !== "rejected") return STATUS_LABELS[word.status];
+    return word.selectionDecision === "already_known" ? t("statusAlreadyKnown") : t("statusNotNeeded");
+  }
+
+  function statusColor(word: Word) {
+    if (word.status !== "rejected") return STATUS_COLORS[word.status];
+    return word.selectionDecision === "already_known" ? "success" : "default";
+  }
 
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const closeMenu = () => setMenuAnchor(null);
@@ -120,6 +131,14 @@ export function ListDetails({ list, words, reviewCount, lessonHref }: ListDetail
     { label: t("statusMemorized"), count: words.filter((w) => w.status === "memorized").length },
     { label: t("statusReviewing"), count: words.filter((w) => w.status === "reviewing").length },
     { label: t("statusKnown"), count: words.filter((w) => w.status === "known").length },
+    {
+      label: t("statusAlreadyKnown"),
+      count: words.filter((w) => w.status === "rejected" && w.selectionDecision === "already_known").length,
+    },
+    {
+      label: t("statusNotNeeded"),
+      count: words.filter((w) => w.status === "rejected" && w.selectionDecision !== "already_known").length,
+    },
     { label: t("statusSlowEncode"), count: slowEncodeQueue.length },
   ];
 
@@ -319,9 +338,9 @@ export function ListDetails({ list, words, reviewCount, lessonHref }: ListDetail
                       </Typography>
                     </Stack>
                     <Chip
-                      label={STATUS_LABELS[word.status]}
+                      label={statusLabel(word)}
                       size="small"
-                      color={STATUS_COLORS[word.status]}
+                      color={statusColor(word)}
                       variant="outlined"
                     />
                   </Stack>

@@ -131,6 +131,8 @@
     "statusMemorized": "Выучены",
     "statusReviewing": "На повторении",
     "statusKnown": "Известны",
+    "statusAlreadyKnown": "Уже знаю",
+    "statusNotNeeded": "Не нужны",
     "statusSlowEncode": "Медленное код."
   },
   "Patterns": {
@@ -203,6 +205,7 @@
     "toEncodingMode": "→ Запоминание",
     "needToLearn": "Надо учить",
     "iKnow": "Знаю",
+    "notNeeded": "Не нужно",
     "skip": "Пропустить",
     "back": "← Назад",
     "done": "готово",

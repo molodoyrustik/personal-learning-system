@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import type { List } from "@/entities/list";
 import { commitSelectionResultsAction } from "@/entities/word/api/word-actions";
-import type { Word } from "@/entities/word/model/types";
+import type { SelectionDecision, Word } from "@/entities/word/model/types";
 import { STUDY_ACTION_BAR_OFFSET, StudyActionBar } from "@/shared/ui/StudyActionBar";
 import { useSessionCommit } from "@/shared/lib/use-session-commit";
 import { SessionSaveGate } from "@/shared/ui/SessionSaveGate";
@@ -28,7 +28,7 @@ export function SelectionMode({ list, initialWords }: SelectionModeProps) {
   // Collected locally for the whole session — flushed to
   // commitSelectionResultsAction only once the queue is fully drained.
   // Quitting early (Back button, closing the tab) never persists anything.
-  const resultsRef = useRef<{ wordId: string; decision: "unknown_and_needed" | "already_known" }[]>([]);
+  const resultsRef = useRef<{ wordId: string; decision: Exclude<SelectionDecision, null> }[]>([]);
 
   const total = queue.length;
   const current = queue[0] ?? null;
@@ -40,22 +40,11 @@ export function SelectionMode({ list, initialWords }: SelectionModeProps) {
     processed > 0 && queue.length === 0,
   );
 
-  function handleNeedToLearn() {
+  function decide(decision: Exclude<SelectionDecision, null>) {
     if (!current) return;
-    resultsRef.current.push({ wordId: current.id, decision: "unknown_and_needed" });
+    resultsRef.current.push({ wordId: current.id, decision });
     setProcessed((n) => n + 1);
     setQueue((q) => q.slice(1));
-  }
-
-  function handleAlreadyKnow() {
-    if (!current) return;
-    resultsRef.current.push({ wordId: current.id, decision: "already_known" });
-    setProcessed((n) => n + 1);
-    setQueue((q) => q.slice(1));
-  }
-
-  function handleSkip() {
-    setQueue((q) => [...q.slice(1), q[0]]);
   }
 
   const encodingHref = `/lists/${list.id}/encoding`;
@@ -118,13 +107,13 @@ export function SelectionMode({ list, initialWords }: SelectionModeProps) {
 
       <StudyActionBar>
         <Stack direction="row" spacing={1}>
-          <Button variant="text" fullWidth onClick={handleSkip} color="inherit">
-            {t("skip")}
+          <Button variant="text" fullWidth onClick={() => decide("not_needed")} color="inherit">
+            {t("notNeeded")}
           </Button>
-          <Button variant="outlined" fullWidth onClick={handleAlreadyKnow}>
+          <Button variant="outlined" fullWidth onClick={() => decide("already_known")}>
             {t("iKnow")}
           </Button>
-          <Button variant="contained" fullWidth onClick={handleNeedToLearn}>
+          <Button variant="contained" fullWidth onClick={() => decide("unknown_and_needed")}>
             {t("needToLearn")}
           </Button>
         </Stack>
